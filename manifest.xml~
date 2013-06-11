@@ -1,0 +1,21 @@
+<package>
+  <description brief="node_traveller">
+
+     node_traveller
+
+  </description>
+  <author>Ken's laptop</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/node_traveller</url>
+  <depend package="rocs_simulation"/>
+  <depend package="rocs_robot"/>
+  <depend package="rocs_test"/>
+  <depend package="rocs_test_mapping"/>
+  <depend package="rospy"/>
+  <depend package="std_msgs"/>
+  <depend package="move_base_msgs"/>
+
+</package>
+
+

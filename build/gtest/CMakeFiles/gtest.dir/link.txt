@@ -1,0 +1,1 @@
+/usr/bin/c++  -fPIC -O2 -g   -shared -Wl,-soname,libgtest.so -o /home/kenslaptop/node_traveller/lib/libgtest.so CMakeFiles/gtest.dir/src/gtest-all.cc.o -L/home/kenslaptop/node_traveller/build/gtest/src -lpthread -Wl,-rpath,/home/kenslaptop/node_traveller/build/gtest/src 
