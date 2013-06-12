@@ -28,10 +28,37 @@
       <file leaf-file-name="travel.py" pinned="false" current="true" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/travel.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state line="540" column="0" selection-start="21349" selection-end="21349" vertical-scroll-proportion="0.5163511">
+            <state line="462" column="12" selection-start="17945" selection-end="17945" vertical-scroll-proportion="0.6878403">
               <folding>
                 <element signature="e#40#52#0" expanded="true" />
               </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="edge.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$USER_HOME$/map_view/map_view/src/edge.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="node.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$USER_HOME$/map_view/map_view/src/node.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="16" column="8" selection-start="469" selection-end="469" vertical-scroll-proportion="0.0">
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="travel_node.py" pinned="false" current="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/travel_node.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state line="11" column="27" selection-start="327" selection-end="327" vertical-scroll-proportion="0.0">
+              <folding />
             </state>
           </provider>
         </entry>
@@ -46,6 +73,13 @@
   <component name="IdeDocumentHistory">
     <option name="changedFiles">
       <list>
+        <option value="$PROJECT_DIR$/path_times.py" />
+        <option value="$PROJECT_DIR$/path_time.py" />
+        <option value="$PROJECT_DIR$/edge.py" />
+        <option value="$PROJECT_DIR$/node.py" />
+        <option value="$PROJECT_DIR$/travel_edge.py" />
+        <option value="$PROJECT_DIR$/travel_node.py" />
+        <option value="$PROJECT_DIR$/a_star_node.py" />
         <option value="$PROJECT_DIR$/travel.py" />
       </list>
     </option>
@@ -70,7 +104,7 @@
     <option name="STATE" value="0" />
   </component>
   <component name="ProjectView">
-    <navigator currentView="ProjectPane" proportions="" version="1" splitterProportion="0.5">
+    <navigator proportions="" version="1" splitterProportion="0.5">
       <flattenPackages />
       <showMembers />
       <showModules />
@@ -81,23 +115,11 @@
       <autoscrollFromSource />
       <sortByType />
     </navigator>
-    <panes>
-      <pane id="ProjectPane">
-        <subPane>
-          <PATH>
-            <PATH_ELEMENT>
-              <option name="myItemId" value="src" />
-              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
-            </PATH_ELEMENT>
-          </PATH>
-        </subPane>
-      </pane>
-      <pane id="Scope" />
-    </panes>
+    <panes />
   </component>
   <component name="PropertiesComponent">
     <property name="WebServerToolWindowFactoryState" value="false" />
-    <property name="last_opened_file_path" value="$USER_HOME$/Dropbox/ros/opencv_ros/src/process.py" />
+    <property name="last_opened_file_path" value="$USER_HOME$/map_view/map_view/src/edge.py" />
   </component>
   <component name="RunManager">
     <configuration default="true" type="PythonConfigurationType" factoryName="Python">
@@ -122,7 +144,7 @@
       <option name="SDK_HOME" value="" />
       <option name="WORKING_DIRECTORY" value="" />
       <option name="IS_MODULE_SDK" value="false" />
-      <module name="src" />
+      <module name="" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" enabled="false" sample_coverage="true" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="" />
       <option name="CLASS_NAME" value="" />
@@ -152,8 +174,8 @@
       <window_info id="Changes" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
       <window_info id="Database" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.32933652" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
-      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.07993605" sideWeight="0.8649518" order="1" side_tool="true" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.07993605" sideWeight="0.12379421" order="0" side_tool="false" content_ui="combo" />
+      <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.12629896" sideWeight="0.95498395" order="1" side_tool="true" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.07993605" sideWeight="0.12379421" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
@@ -223,87 +245,6 @@
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/travel.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="540" column="11" selection-start="21360" selection-end="21360" vertical-scroll-proportion="0.0">
-          <folding>
-            <element signature="e#40#52#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/travel.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="517" column="43" selection-start="20529" selection-end="20529" vertical-scroll-proportion="0.0">
-          <folding>
-            <element signature="e#40#52#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/travel.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="643" column="18" selection-start="24433" selection-end="24433" vertical-scroll-proportion="0.0">
-          <folding>
-            <element signature="e#40#52#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/travel.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="474" column="34" selection-start="18700" selection-end="18700" vertical-scroll-proportion="0.0">
-          <folding>
-            <element signature="e#40#52#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/travel.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="285" column="21" selection-start="10989" selection-end="10989" vertical-scroll-proportion="0.0">
-          <folding>
-            <element signature="e#40#52#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/travel.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="447" column="79" selection-start="17232" selection-end="17232" vertical-scroll-proportion="0.0">
-          <folding>
-            <element signature="e#40#52#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/travel.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="457" column="40" selection-start="16991" selection-end="16991" vertical-scroll-proportion="0.0">
-          <folding>
-            <element signature="e#40#52#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/travel.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="282" column="16" selection-start="11055" selection-end="11055" vertical-scroll-proportion="0.0">
-          <folding>
-            <element signature="e#40#52#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/travel.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state line="279" column="27" selection-start="9793" selection-end="9793" vertical-scroll-proportion="0.0">
-          <folding>
-            <element signature="e#40#52#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/travel.py">
-      <provider selected="true" editor-type-id="text-editor">
         <state line="48" column="20" selection-start="1650" selection-end="1650" vertical-scroll-proportion="0.0">
           <folding>
             <element signature="e#40#52#0" expanded="true" />
@@ -323,9 +264,75 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/path_time.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="21" selection-start="21" selection-end="21" vertical-scroll-proportion="0.0" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/path_times.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="21" selection-start="21" selection-end="21" vertical-scroll-proportion="0.0" />
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/map_view/map_view/src/zoompanel.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="165" column="8" selection-start="5704" selection-end="5704" vertical-scroll-proportion="-75.96774" />
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/map_view/map_view/src/gui.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="81" column="50" selection-start="2903" selection-end="2907" vertical-scroll-proportion="2.0454545" />
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/map_view/map_view/src/FloatCanvas.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="15" column="10" selection-start="296" selection-end="296" vertical-scroll-proportion="0.0" />
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/map_view/map_view/src/GUIMode.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="13" column="12" selection-start="275" selection-end="275" vertical-scroll-proportion="0.32828283" />
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/map_view/map_view/src/NavCanvas.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="6" column="24" selection-start="106" selection-end="106" vertical-scroll-proportion="0.14983165" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/travel_edge.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="21" column="0" selection-start="570" selection-end="570" vertical-scroll-proportion="0.0" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/a_star_node.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="1" column="14" selection-start="36" selection-end="36" vertical-scroll-proportion="0.0" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/travel_node.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="11" column="27" selection-start="327" selection-end="327" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/map_view/map_view/src/node.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="16" column="8" selection-start="469" selection-end="469" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$USER_HOME$/map_view/map_view/src/edge.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state line="0" column="0" selection-start="0" selection-end="0" vertical-scroll-proportion="0.0">
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/travel.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state line="540" column="0" selection-start="21349" selection-end="21349" vertical-scroll-proportion="0.5163511">
+        <state line="462" column="12" selection-start="17945" selection-end="17945" vertical-scroll-proportion="0.6878403">
           <folding>
             <element signature="e#40#52#0" expanded="true" />
           </folding>
