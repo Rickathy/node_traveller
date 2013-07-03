@@ -13,7 +13,7 @@ class Node():
         self.prev_id = -1       # Used to save the old node id when renumbering is done
         self.graphic = -1       # Used to link to the graphical object which represents the node
         self.coords = coords        
-        self.m_coords = self.MetricCoords(self.coords)
+        self.m_coords = None
         
     def GetId(self):
         return self.id

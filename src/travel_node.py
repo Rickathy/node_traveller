@@ -10,8 +10,10 @@ class travel_node:
         self.node_num=node_num
         # add an edge between this node and another
     def __eq__(self,other):
-        self.x=other.x
-        self.y=other.y
+        if (self.x== other.x) & (self.y==other.y):
+            return True
+        else:
+            return False
     def add_connection(self,node):
         connection = travel_edge((self,node))
         self.connections.append(connection)

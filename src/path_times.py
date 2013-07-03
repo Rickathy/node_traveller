@@ -7,7 +7,7 @@ class path_times:
         self.edge=edge
         self.recordings = []
     def add_recording(self, time_taken):
-        self.recordings.append(path_time(datetime.today(),time_taken))
+        self.recordings.append(path_time.path_time(datetime.today(),time_taken))
     def __str__(self):
         path_string =[]
         for recording in self.recordings:

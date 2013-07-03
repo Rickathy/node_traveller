@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
 #ROS dependences
+import actionlib.simple_action_client
 import rospy
 import roslib
 import actionlib
 import tf
-
+from std_msgs.msg import UInt32
 import sys
 #print('\n'.join(sorted(sys.path)))
 
@@ -14,12 +15,17 @@ import random
 import time
 import pickle
 from datetime import datetime
+import matplotlib
+import matplotlib.pyplot
+#from pylab import *
 
 from travel_node import travel_node
 from travel_edge import travel_edge
 from a_star_node import a_star_node
 from path_time import path_time
 from path_times import path_times
+
+
 
 
 #import node as Node
@@ -40,11 +46,14 @@ class travel:
         rospy.init_node('travel')
         self.move_base = actionlib.SimpleActionClient("move_base", MoveBaseAction)
         self.pub = rospy.Publisher("move_base",MoveBaseAction)
+        self.dest_pub = rospy.Publisher("/node_traveller/dest",UInt32)
         self.listener = tf.TransformListener()
         self.path_times_list = []
+
     # pickle path_times for use later
     def save_path_times(self):
         pickle.dump( self.path_times_list, open( "path_times.pt", "wb" ) )
+
     # load the pickled path times
     def load_path_times(self):
         self.path_times_list = pickle.load( open( "path_times.pt", "rb" ) )
@@ -55,14 +64,19 @@ class travel:
             for edge in node.connections:
                 if edge  not in edges:
                     edges.append(edge)
+        print('Path times initialized')
         for edge in edges:
             self.path_times_list.append(path_times(edge))
+        for path_time in  self.path_times_list:
+            print(path_time)
+
     # initializes a test map to be used for navigation testing
     def initialize_test_map(self,num):
         if num ==0:## no switch statements in python, so use nested ifs instead
             self.initialize_test_map_one()
         elif num ==1:
                 self.initialize_test_map_two()
+
     #smaller map for testing
     def initialize_test_map_one(self):
         #start node
@@ -100,6 +114,7 @@ class travel:
         node7.add_connection(node12)
 
         self.nodes = [node0,node1,node2,node3,node4,node5,node6,node7,node8,node9,node10,node11,node12]
+
     # larger map for testing
     def initialize_test_map_two(self):
         #start node
@@ -280,7 +295,7 @@ class travel:
         print( 'about to change heading to node')
         self.move_base.send_goal_and_wait(heading_goal)
         print('heading changed')
-        print(self.move_base.get_goal_status_text())
+
 
 
     #gets the robots current position
@@ -293,6 +308,7 @@ class travel:
             except (tf.LookupException, tf.ConnectivityException, tf.ExtrapolationException):
                 continue
         return trans
+
     #returns the closest node to the robot
     def get_current_node(self):
         trans=self.get_position()
@@ -303,6 +319,8 @@ class travel:
                 distance = self.euclidean(trans[0][0],trans[0][1],self.nodes[i].x,self.nodes[i].y)
                 closest = i
         self.current = closest
+        print('Current closest node is {0}'.format(closest))
+
     # sends the robot to the specified (x,y) coordinate of the map
     # records the time taken to travel in a straight line between the nodes
     def head_to_position(self,node):
@@ -312,9 +330,9 @@ class travel:
 
         #wait for the action server to be available
         move_base_client =actionlib.SimpleActionClient('move_base',MoveBaseAction)
-        print('waiting for server')
+
         move_base_client.wait_for_server()
-        print( 'server found')
+
         #construct a simple goal in the base_link frame
 
         goal = MoveBaseGoal()
@@ -331,31 +349,62 @@ class travel:
 
         self.set_heading(trans,goal)
 
+        # we want to use our new heading not the old one
+        trans=self.get_position()
+        goal.target_pose.pose.orientation.x =trans[1][0]
+        goal.target_pose.pose.orientation.y =trans[1][1]
+        goal.target_pose.pose.orientation.z =trans[1][2]
+        goal.target_pose.pose.orientation.w =trans[1][3]
+
         #send the goal and wait for the base to get there
-        print( "heading to node: ",node.node_num,'at position: ',node.x,', ',node.y)
+        print( "heading to node: {0} at position {1},{2} ".format(node.node_num,node.x,node.y))
+
+        self.dest_pub.publish(node.node_num)
         time_start = datetime.today()
-        move_base_client.send_goal(goal)
+        result = self.move_base.send_goal_and_wait(goal)# send the goal and return whether it was completed or not
+        if result is not 3:#something went wrong, 3 is success
+            return False
+
+
+        print("Goal reached.")
+        '''move_base_client.send_goal(goal)
         target_reached = False
         while not target_reached:
             trans  = self.listener.lookupTransform('/map','/base_link',rospy.Time(0))
             diff1= trans[0][0]-goal.target_pose.pose.position.x
             diff2 = trans[0][1]-goal.target_pose.pose.position.y
-            tot = math.sqrt(diff1*diff1+diff2*diff2)
+            tot = abs(diff1)+abs(diff2)
+            goal_status = move_base_client.get_state()
 
-            if tot<0.1: #threshold for how close we want to be
-                target_reached=True
-                move_base_client.cancel_goal()
-                for path_time in self.path_times_list:
-                    if ((path_time.edge.A.node_num==self.current) & (path_time.edge.B.node_num==node.node_num )) | ((path_time.edge.B.node_num==self.current) & (path_time.edge.A.node_num==node.node_num )):
-                        path_time.add_recording(datetime.today() -time_start)
-                        print(  'time taken' ,datetime.today() -time_start)
-                self.current = node.node_num
+            if  goal_status is 3 :
+                print(' status is ', goal_status)
+                target_reached = True
             else:
-                goal_status = move_base_client.get_state()
-               # if goal_status is not
-                if (goal_status is not 1) & (goal_status is not 0):# 0= pending, 1= active
-                    print('failed to travel to node')
-                    return False
+                if goal_status is 1:
+                    if tot<0.01: #threshold for how close we want to be
+                        target_reached=True
+                        move_base_client.cancel_goal()
+                        print('Goal reached')
+                        print('tot is ',tot)
+                        print('path times len', len(self.path_times_list))
+
+
+
+                       # if goal_status is not
+                else:
+
+                    if (goal_status is not 0):# 0= pending, 1= active
+                                print goal_status
+                                print('failed to travel to node')
+                                return False '''
+
+
+        for path_time in self.path_times_list:
+
+                if ((path_time.edge.A.node_num==self.current) & (path_time.edge.B.node_num==node.node_num )) | ((path_time.edge.B.node_num==self.current) & (path_time.edge.A.node_num==node.node_num )):
+                    path_time.add_recording(datetime.today() -time_start)
+                    print(  'time taken {0}'.format(datetime.today() -time_start))
+        self.current = node.node_num
 
 
 
@@ -366,20 +415,29 @@ class travel:
     def travel_all_nodes_naive(self):
         for node in self.nodes:
             self.head_to_position(node)
+
     # follows a provided path (nodes need to be connected in the path for proper timing gathering)
     def follow_path(self, path):
-        for node in path:
-            if self.head_to_position(node) is False:
+        if len(path)>1:
+            print('path is longer than 1:', len(path))
+        for i in range(len(path)):
+            print('heading to {0}'.format( path[i].node_num))
+            if self.head_to_position(path[i]) is False:
                 print('Failed to follow path')
-                return
+                return i
+        return True
+
+
+
     #generate an a star route from the current position
     # assumes the robot knows the current node it is on
     def a_star_from_current(self,end):
-        return self.a_star(self.current,end)
+        return self.a_star(self.current,end,[])
 
     #performs an a* search between two nodes
     # the path returned assumes we are starting at the start node (so does not include it in the path)
-    def a_star(self,start,end):
+    #includes a list of blockages
+    def a_star(self,start,end,blocked):
 
         visited_edges = []
         visited_nodes = []
@@ -408,7 +466,7 @@ class travel:
           #  rospy.sleep(1)
             #print '---------------------visited edges-------------------------\n',visited_edges
             for edge in best_node.node.connections:
-                if edge not in visited_edges:
+                if (edge not in visited_edges) & (edge not in blocked):
                     vis =False
                     for n in visited_nodes:
 
@@ -433,6 +491,7 @@ class travel:
             current=current.parent
 
         return path
+
     # prints a route (of nodes)
     def print_route(self,route):
         for node in route:
@@ -441,27 +500,34 @@ class travel:
     def euclidean(self,x1,y1,x2,y2):
         return math.sqrt(math.pow(x1-x2,2)+math.pow(y1-y2,2))
     # follow a provided route
-    def follow_exploration_route(self, route):
-        for i in range(len(route)):
+    def follow_exploration_route(self, route, position_in_route):
+        for i in range(position_in_route,len(route)):
             print('heading to ', i, ' of ', len(route))
-            path = self.a_star_from_current(route[i])
-            self.follow_path(path)
+            if self.head_to_position(self.nodes[route[i]]) is False:#There was a problem reaching that node
+                return i
+        return True
+
+
 
     def load_graph(self):
-        graph_file = open('map2.graph', "r")
+        graph_file = open('map1.graph', "r")
         g = pickle.load(graph_file)
         nodes = g[0]
         edges = g[1]
-        print('g')
-        print len(edges)
+       # print('g')
+        #print len(edges)
         self.nodes =[]
         for node in nodes:
-            new_node = travel_node(node.coords[0],node.coords[1],node.id)
+            new_node = travel_node(node.m_coords[0],node.m_coords[1],node.id)
             self.nodes.append(new_node)
-        print len(nodes)
+       # print len(nodes)
+        print('Nodes loaded')
+        for node in self.nodes:
+            print node.node_num, node.x, node.y
+        print('Edges loaded')
         for edge in edges:
-            
-                print('edges', edge.node1, edge.node2)
+
+                print(edge.node1, edge.node2)
                 self.nodes[int(edge.node1)].add_connection(self.nodes[int(edge.node2)])
 
     #visit every node in the order they are saved
@@ -472,74 +538,7 @@ class travel:
             route.append(i)
         self.follow_exploration_route(route)
 
-    ''' def best_route_through_all_edges(self,start,n):
-        best=[]
-        length =sys.maxint
-        for i in range(n):
-            candidate = self.route_through_all_edges(start)
-            if len(candidate)<length:
-                length = len(candidate)
-                best = candidate
-        return candidate
 
-    # create a route through all the edges in the map
-    def route_through_all_edges(self, start):
-        route = []
-        current_pos = start
-        remaining_edges= [] # create a list of all the edges
-        visited_edges=[]
-        for path_times in self.path_times_list:
-            remaining_edges.append(path_times.edge)
-            #we now have a list of all the edges.
-        ''''''simplest case is to just visit each one, hopefully we can remove any possible of duplicates by looking at the path generated
-        by A* and removing additional nodes from our to visit list''''''
-        while len(remaining_edges) is not 0:
-            current_edge =remaining_edges[random.randint(0,len(remaining_edges)-1)]
-            #remaining_edges.remove(current_edge)
-
-            routeA =self.a_star(current_pos,current_edge.A.node_num)
-            routeB = self.a_star(current_pos,current_edge.B.node_num)
-            '''''' Whichever route is longest, must be the one that encompasses the edge we are examining''''''
-            if len(routeA)>len(routeB):
-                current_route = routeA
-            else:
-                current_route=routeB
-           # print( 'current route ')
-           # for node in current_route:
-           #     print( node)
-            for i in range(len(current_route)):
-
-                found = False
-                for edge in remaining_edges:
-
-                    if (edge.A.node_num==current_pos) & (edge.B.node_num==current_route[i].node_num):
-                        remaining_edges.remove(edge)
-                        visited_edges.append(edge)
-                        current_pos = edge.B.node_num
-                        found=True
-                        break
-                    else:
-                        if (edge.B.node_num==current_pos) & (edge.A.node_num==current_route[i].node_num):
-                            remaining_edges.remove(edge)
-                            visited_edges.append(edge)
-                            current_pos=edge.A.node_num
-                            found=True
-                            break
-                if not found:
-                    for edge in visited_edges:
-                        if (edge.A.node_num==current_pos) & (edge.B.node_num==current_route[i].node_num):
-                            current_pos = edge.B.node_num
-                            break
-                        else:
-                            if (edge.B.node_num==current_pos) & (edge.A.node_num==current_route[i].node_num):
-                                current_pos=edge.A.node_num
-                                break
-
-
-                route.append(current_route[i])
-
-        return route
-        '''
     # visit every edge in the map
     def visit_all_edges(self):
         self.get_current_node()
@@ -560,6 +559,7 @@ class travel:
             else:
                 odd.append(node.node_num)
         return odd
+
     # create a matrix stating the distance between each odd node
     def create_odd_graph(self ):
         odd_list = self.find_odd_nodes()
@@ -568,15 +568,19 @@ class travel:
         for start in odd_list:
             current =[]
             for end in odd_list:
-                length = len(self.a_star(start,end))
+                length = len(self.a_star(start,end,[]))
                 current.append(length)
             matrix.append(current)
         return numpy.array(matrix), odd_list
-    # first generates a graph comprising only those nodes with odd degree
-    # then connects nodes so that they have even degree with nearest neighbours
-    # returns the last path as well, if the start or end of it are the current position they can be ignored.
-    # (maybe if any of the nodes are the start or end position they can be ignored?)
+
+    '''
+    ' first generates a graph comprising only those nodes with odd degree
+    ' then connects nodes so that they have even degree with nearest neighbours
+    ' returns the last path as well, if the start or end of it are the current position they can be ignored.
+    ' (maybe if any of the nodes are the start or end position they can be ignored?)
+    '''
     def connected_odd_graph(self,position):
+
         graph,nodes = self.create_odd_graph()
         potential_shortcut=[]
         shortcut_gain=0
@@ -585,7 +589,10 @@ class travel:
         additions=0
        # print('graph',graph)
        # print(len(graph))
+        if(len(graph)==0):
+            return []
         while additions < (len(graph)/2):
+            print('addition',additions)
             lowest = sys.maxint
             pos =0
 
@@ -596,7 +603,7 @@ class travel:
                         lowest = graph[i][j]
                         pos = (i,j)
            # print(pos)
-            route =self.a_star(nodes[pos[0]],nodes[pos[1]])
+            route =self.a_star(nodes[pos[0]],nodes[pos[1]],[])
 
             connections.append((nodes[pos[0]],route[0].node_num))
             for i in range(len(route)-1):
@@ -644,17 +651,9 @@ class travel:
                         potential_shortcut= route
                         #potential_shortcut.insert(0,self.nodes[nodes[pos[0]]])
                         shortcut_gain=len(route)-index
-       # print('number of connections ', len(connections))
-       # print( 'route')
-    #    print( self.nodes[nodes[pos[0]]])
+
         route.insert(0,self.nodes[nodes[pos[0]]])
-        #for node in route:
-          #  print( node.node_num)
-        #print('shortcut')
-     #   for node in potential_shortcut:
-      #      print node.node_num
-      #  print potential_shortcut
-      #  print self.nodes[position]
+
         if len(potential_shortcut)==0:
             return connections
         short_cut_index = potential_shortcut.index(self.nodes[position])
@@ -684,8 +683,8 @@ class travel:
                     connections.remove((potential_shortcut[i].node_num,potential_shortcut[i+1].node_num))
 
 
-
         return connections
+
     # create a list of all the edges
     def copy_connections(self):
         graph =[]
@@ -694,6 +693,7 @@ class travel:
                 if edge.A.node_num == node.node_num : # maintains only one of each edge
                     graph.append((node.node_num,edge.B.node_num))
         return graph
+
     #quick and dirty graph building for comparison
     def simple_edges(self,position):
         tour = []
@@ -711,8 +711,8 @@ class travel:
             change = False
             for i in range(len(edges)):
                 if((edges[i].A.node_num, edges[i].B.node_num) not in visited) & ((edges[i].B.node_num, edges[i].A.node_num) not in visited):
-                    distA =len(self.a_star(position,edges[i].A.node_num))
-                    distB = len(self.a_star(position,edges[i].B.node_num))
+                    distA =len(self.a_star(position,edges[i].A.node_num,[]))
+                    distB = len(self.a_star(position,edges[i].B.node_num,[]))
                     if distA > distB:
                         if distA < dist:
                             dist = distA
@@ -729,11 +729,11 @@ class travel:
 
             if A is True:
 
-                route = self.a_star(position, edges[pos].A.node_num)
+                route = self.a_star(position, edges[pos].A.node_num,[])
                 visited.append((position,route[0].node_num))
                 position = edges[pos].A.node_num
             else:
-                route = self.a_star(position,edges[pos].B.node_num)
+                route = self.a_star(position,edges[pos].B.node_num,[])
                 visited.append((position,route[0].node_num))
                 position = edges[pos].B.node_num
 
@@ -754,12 +754,13 @@ class travel:
         visited = []
         for node in self.nodes:
             if node.node_num not in visited:
-                route = self.a_star(position, node.node_num)
+                route = self.a_star(position, node.node_num,[])
                 for node in route:
                     tour.append(node.node_num)
                     visited.append(node.node_num)
                 position = node.node_num
         return tour
+
     # create a path to each edge in the order they are saved/generated
     def quick_tour(self,position):
         tour =[]
@@ -767,8 +768,8 @@ class travel:
         for node in self.nodes:
             for edge in node.connections:
                 if ((edge.A.node_num, edge.B.node_num) not in visited) & ((edge.B.node_num, edge.A.node_num) not in visited):
-                    routeA = self.a_star(position,edge.A.node_num)
-                    routeB = self.a_star(position,edge.B.node_num)
+                    routeA = self.a_star(position,edge.A.node_num,[])
+                    routeB = self.a_star(position,edge.B.node_num,[])
                     route = []
                     if len(routeA )< len(routeB):
                        route = routeB
@@ -783,24 +784,31 @@ class travel:
         return tour
 
 
+
+
     # create a tour through all edges in the graph using the idea of euler tours
     def euler_tour(self,position):
+
         odd_graph = self.connected_odd_graph(position)
+
+
         graph = self.copy_connections()
-        print('graph pre additions',graph)
+
+
         for odd_edge in odd_graph:
             graph.append(odd_edge)
-        #print('graph is', graph)
+
         tour = self.find_eulerian_tour(graph,position)
-        #print('before duplicate removal', tour)
+
+
         tour = self.remove_duplicates_from_tour(tour)
         tour.reverse()
-       # print('before repeat removal', tour)
+
+
         self.remove_repeat_visit(tour)
-        #print ('before move of start', tour)
-        #tour = self.set_start(position,tour)
 
         return tour
+
     # find the eulerian tour of the graph
     def find_eulerian_tour(self,graph,start):
         whole_tour=[]
@@ -820,6 +828,7 @@ class travel:
                 whole_tour.append(node)
 
         return whole_tour
+
     # find a single tour
     def find_tour(self,u):
         for (i, j) in self.E:           # find an edge with u as the source node
@@ -830,6 +839,7 @@ class travel:
                 self.E.remove((i, j))
                 self.find_tour(i)
         self.tour.append(u)             # we found an edge from u, so its part of the tour
+
     # cut out any duplicates from a tour
     def remove_duplicates_from_tour(self,tour):
         new_tour=[]
@@ -839,6 +849,7 @@ class travel:
         if tour[len(tour)-1]!= tour[(len(tour))-2]:
             new_tour.append(tour[len(tour)-1])
         return new_tour
+
     # Begins at the end of the tour going backwards, removing any edges that were visited previously and thus are no longer needed (stops once it doesnt remove a edge)
     def remove_repeat_visit(self,tour):
         #start at the end of the journey and keep going back until a path is found that is unvisited
@@ -846,6 +857,7 @@ class travel:
         while self.more_than_single_instance(tour, tour[position],tour[position-1]):
             tour.pop(position)
             position-=1
+
     # return true if there is more than one instance of this traversal
     def more_than_single_instance(self,tour,nodeA,nodeB):
         count =0
@@ -864,82 +876,67 @@ class travel:
         return tour
 
 
+    def graph_path_times(self):
 
-#class to represent a node in a graph
+        x =[]
+        y=[]
+        for i in range(len(self.path_times_list)):
+            for recording in self.path_times_list[i].recordings:
+                x.append(i)
+                y.append(recording.time.seconds+recording.time.microseconds/10**6.)
+        print(x)
+        print(y)
+        print(len(x))
+        print(len(y))
 
-#class to represent a bunch of timing recordings between a node pair
+        fig = matplotlib.pyplot.figure()
+        ax = fig.add_subplot(111)
+        ax.set_xlabel('edge index', fontsize=20)
+        ax.set_ylabel('time taken (seconds)', fontsize=20)
+        ax.scatter(x,y)
+        matplotlib.pyplot.show()
 
-# class to represent an edge in a graph
+
+    def naive_run(self):
+        blocked = []
+
+        tour = self.euler_tour(self.current)
+        print('Tour generated: ')
+        print(tour)
+        result =  self.follow_exploration_route(tour,0)
+        while result is not True:#something went wrong in the run. get to the next node, avoiding the blocked one and try to carry on
+            self.head_to_position(self.nodes[tour[result-1]])##attempt to head back to the node we were at previously
+            visited =[]
+            for j in range(1,result-1):#create a list of all the nodes visited
+                visited.append((self.nodes[tour[j-1]],self.nodes[tour[j]]))
+            for path_time in  self.path_times_list:
+                if ((path_time.edge.A == self.nodes[tour[result-1]]) & (path_time.edge.B == self.nodes[tour[result]]))|((path_time.edge.B == self.nodes[tour[result-1]]) & (path_time.edge.A == self.nodes[tour[result]])):
+                    blocked.append(path_time.edge)
+                    break
+            route = self.a_star(self.current,self.nodes[tour[result]].node_num,blocked)
+            self.follow_path(route)
+            result = self.follow_exploration_route(tour,result)
 
 
+        print('Run finished. Path times are:')
+        for pt in self.path_times_list:
+            print(pt)
+        self.save_path_times()
 
+    def set_up_for_run(self):
+        self.load_graph()
 
+        self.initialize_path_times_from_nodes()
 
-
+        self.get_current_node()
 
 def main(args):
     t = travel()
-    #t.initialize_test_map(1)
+    t.set_up_for_run()
+    t.naive_run()
+    t.naive_run()
+    t.graph_path_times()
 
-    #t.initialize_path_times_from_nodes()
-
-    #t.load_path_times()
-   # tour = t.simple_edges(7)
-
-    '''for i in range(0,62):
-        print('start is ',i)
-
-
-        ti= time.time()
-
-        tour = t.simple_edges(i)
-        print('simple edges took',(time.time()-ti))
-        print len(tour)
-        ti= time.time()
-        tour=t.euler_tour(i)
-        print('euler tour took',(time.time()-ti))
-        print len(tour)
-        ti= time.time()
-        tour = t.quick_tour(i)
-        print('quick tour took',(time.time()-ti))
-        print len(tour)
-'''
-    #t.get_current_node()
-    #tour = t.euler_tour(t.current)
-
-    #print(tour)
-    #t.follow_exploration_route(tour)
-    t.load_graph()
-    tour = t.euler_tour(0)
-    print(tour)
-    #print tour
-    #t.visit_all_edges()
-    #t.save_path_times()
-    #print dist.pdist(t.path_times_list[5].data_matrix())
-    #for ti in t.path_times_list:
-    #   print( ti)
-    #  print(ti.data_matrix())
-
-
-
-
-
-   # t.save_path_times()
-
-
-    #print(t.path_times_list)
-    #for i in [1,2,3,4,5,10,15,20,25,50,100]:
-    #    for j in range(10):
-    #        ti = time.time()
-    #        path = t.best_route_through_all_edges(0,i)
-    #        ti =  time.time()-ti
-    #        print( 'path length was: ', len(path),'using ',i, ' iterations and took ',ti)
-
-    #print( 'final path is:')
-   # for node in path:
-    #    print(node)
-
-   # t.travel_all_nodes_naive()
 
 
 if __name__ == '__main__':
