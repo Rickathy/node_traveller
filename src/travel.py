@@ -19,6 +19,7 @@ import matplotlib
 import matplotlib.pyplot
 #from pylab import *
 
+
 from travel_node import travel_node
 from travel_edge import travel_edge
 from a_star_node import a_star_node
@@ -26,10 +27,6 @@ from path_time import path_time
 from path_times import path_times
 
 
-
-
-#import node as Node
-#print(dir(Node))
 import numpy, scipy
 import scipy.cluster.hierarchy as hier
 import scipy.spatial.distance as dist
@@ -363,6 +360,12 @@ class travel:
         time_start = datetime.today()
         result = self.move_base.send_goal_and_wait(goal)# send the goal and return whether it was completed or not
         if result is not 3:#something went wrong, 3 is success
+            print('heading to node: {0} failed'.format(node.node_num))
+            for path_time in self.path_times_list:
+
+                if ((path_time.edge.A.node_num==self.current) & (path_time.edge.B.node_num==node.node_num )) | ((path_time.edge.B.node_num==self.current) & (path_time.edge.A.node_num==node.node_num )):
+                    path_time.add_recording(None)
+
             return False
 
 
@@ -416,16 +419,7 @@ class travel:
         for node in self.nodes:
             self.head_to_position(node)
 
-    # follows a provided path (nodes need to be connected in the path for proper timing gathering)
-    def follow_path(self, path):
-        if len(path)>1:
-            print('path is longer than 1:', len(path))
-        for i in range(len(path)):
-            print('heading to {0}'.format( path[i].node_num))
-            if self.head_to_position(path[i]) is False:
-                print('Failed to follow path')
-                return i
-        return True
+
 
 
 
@@ -446,7 +440,7 @@ class travel:
        # print(frontier[0])
         while True:
             best= sys.maxint
-            best_pos=0
+            best_pos=-1
             for i in range(len(frontier)):
                 #print('current best is ',best)
                 #print('looking at heuristic of: ',frontier[i].heuristic)
@@ -455,7 +449,11 @@ class travel:
                     best= frontier[i].heuristic
                     best_pos=i
             ## we have found the best node at this stage of the search
-            best_node = frontier[best_pos]
+            try:
+                best_node = frontier[best_pos]
+            except IndexError:
+                print('index error, best pos is ', best_pos)
+                raise
             frontier.remove(best_node)
             visited_nodes.append(best_node)
             #print 'best node', best_node
@@ -466,7 +464,15 @@ class travel:
           #  rospy.sleep(1)
             #print '---------------------visited edges-------------------------\n',visited_edges
             for edge in best_node.node.connections:
-                if (edge not in visited_edges) & (edge not in blocked):
+                inblocked=False
+                if blocked is not True:
+                    for block in blocked:
+                   #' print edge.A.node_num,' ',block.edge.A.node_num,' ', edge.B.node_num ,' ',block.edge.B.node_num
+                        if ((edge.A.node_num==block.A.node_num)&(edge.B.node_num==block.B.node_num))|((edge.B.node_num==block.A.node_num)&(edge.A.node_num==block.B.node_num)):
+
+                            inblocked=True
+
+                if (edge not in visited_edges) & (not inblocked):
                     vis =False
                     for n in visited_nodes:
 
@@ -502,11 +508,20 @@ class travel:
     # follow a provided route
     def follow_exploration_route(self, route, position_in_route):
         for i in range(position_in_route,len(route)):
-            print('heading to ', i, ' of ', len(route))
+            print('heading to {0} of {1}'.format(i,len(route)))
             if self.head_to_position(self.nodes[route[i]]) is False:#There was a problem reaching that node
                 return i
         return True
-
+    # follows a provided path (nodes need to be connected in the path for proper timing gathering)
+    def follow_path(self, path):
+        if len(path)>1:
+            print('path is longer than 1:', len(path))
+        for i in range(len(path)):
+            print('heading to {0}'.format( path[i].node_num))
+            if self.head_to_position(path[i]) is False:
+                print('Failed to follow path')
+                return i
+        return True
 
 
     def load_graph(self):
@@ -523,7 +538,7 @@ class travel:
        # print len(nodes)
         print('Nodes loaded')
         for node in self.nodes:
-            print node.node_num, node.x, node.y
+            print(node.node_num, node.x, node.y)
         print('Edges loaded')
         for edge in edges:
 
@@ -551,27 +566,59 @@ class travel:
         self.follow_exploration_route(path)
 
     # finds all the odd nodes in the graph
-    def find_odd_nodes(self):
+    def find_odd_nodes(self,blocked,whole,position):
         odd =[]
-        for node in self.nodes:
-            if len(node.connections) % 2 ==0:
-                continue
-            else:
-                odd.append(node.node_num)
+        if blocked is True:
+            for node in self.nodes:
+                if len(node.connections) % 2 ==0:
+                    continue
+                else:
+                    odd.append(node.node_num)
+        else:
+            for node in self.nodes:
+                try:
+                    self.a_star(position,node.node_num,blocked)
+                except IndexError:
+                    break
+                count=0
+                for conn in node.connections:
+                    for block in blocked:
+                        if ((conn.A== block.A) &( conn.B== block.B)) | ((conn.B== block.A) & (conn.A== block.B)):
+                            count =1
+                if (len(node.connections)-count) % 2 ==0:
+                    continue
+                else:
+                    odd.append(node.node_num)
         return odd
 
+
     # create a matrix stating the distance between each odd node
-    def create_odd_graph(self ):
-        odd_list = self.find_odd_nodes()
+    def create_odd_graph(self,blocked,whole ,position):
+        odd_list = self.find_odd_nodes(blocked,whole,position)
         #print('odd list', odd_list)
         matrix =[]
         for start in odd_list:
             current =[]
+            noneCount=0
             for end in odd_list:
-                length = len(self.a_star(start,end,[]))
+                try:
+                    if blocked is True:
+                        length = len(self.a_star(start,end,[]))
+                    else:
+
+                        length = len(self.a_star(start,end,blocked))
+                        #print('length is',length)
+                except IndexError:
+                    print('None')
+                    length = None
+                    noneCount+=1
                 current.append(length)
             matrix.append(current)
+        print('matrix')
+        print numpy.array(matrix), odd_list
         return numpy.array(matrix), odd_list
+
+
 
     '''
     ' first generates a graph comprising only those nodes with odd degree
@@ -579,9 +626,10 @@ class travel:
     ' returns the last path as well, if the start or end of it are the current position they can be ignored.
     ' (maybe if any of the nodes are the start or end position they can be ignored?)
     '''
-    def connected_odd_graph(self,position):
+    def connected_odd_graph(self,position,blocked,whole):
 
-        graph,nodes = self.create_odd_graph()
+        graph,nodes = self.create_odd_graph(blocked,whole,position)
+
         potential_shortcut=[]
         shortcut_gain=0
         visited = []
@@ -598,13 +646,20 @@ class travel:
 
             for i in range(len(graph)):
                 for j in range(len(graph[0])):
-                    if (i not in visited) & (j not in visited) &  (graph[i][j]< lowest) &( graph[i][j] != 0)  :
+                    if (i not in visited) & (j not in visited) &  (graph[i][j]< lowest) &( graph[i][j] != 0) & (graph[i][j] is not None) :
 
                         lowest = graph[i][j]
                         pos = (i,j)
            # print(pos)
-            route =self.a_star(nodes[pos[0]],nodes[pos[1]],[])
-
+            if blocked is True:
+                route =self.a_star(nodes[pos[0]],nodes[pos[1]],[])
+            else:
+                try:
+                    route =self.a_star(nodes[pos[0]],nodes[pos[1]],blocked)
+                except IndexError:
+                    print nodes[pos[0]]
+                    print nodes[pos[1]]
+                    break
             connections.append((nodes[pos[0]],route[0].node_num))
             for i in range(len(route)-1):
                 connections.append((route[i].node_num,route[i+1].node_num))
@@ -682,16 +737,31 @@ class travel:
                   #  print((potential_shortcut[i].node_num,potential_shortcut[i+1].node_num))
                     connections.remove((potential_shortcut[i].node_num,potential_shortcut[i+1].node_num))
 
-
+        #print('connections',connections)
         return connections
 
     # create a list of all the edges
-    def copy_connections(self):
+    def copy_connections(self,blocked,position):
         graph =[]
         for node in self.nodes:
             for edge in node.connections:
                 if edge.A.node_num == node.node_num : # maintains only one of each edge
-                    graph.append((node.node_num,edge.B.node_num))
+                    clear = True
+                    if blocked is not True:
+                        for block in blocked:
+                            if ((edge.A.node_num == block.A.node_num)& (edge.B.node_num == block.B.node_num))|((edge.B.node_num == block.A.node_num)& (edge.A.node_num == block.B.node_num)):
+                                clear=False
+                                break
+                    if clear is True:
+                        #print('')
+                        try:
+                            tour = self.a_star(position,edge.A.node_num,blocked)
+
+                            graph.append((node.node_num,edge.B.node_num))
+                        except IndexError:
+                            print('error')
+                            continue
+        print('graph', graph)
         return graph
 
     #quick and dirty graph building for comparison
@@ -787,22 +857,27 @@ class travel:
 
 
     # create a tour through all edges in the graph using the idea of euler tours
-    def euler_tour(self,position):
 
-        odd_graph = self.connected_odd_graph(position)
+    def euler_tour(self,position,blocked,visited):
+
+        graph = self.copy_connections(blocked,position)
+
+        odd_graph = self.connected_odd_graph(position,blocked,graph)
 
 
-        graph = self.copy_connections()
+
 
 
         for odd_edge in odd_graph:
             graph.append(odd_edge)
 
-        tour = self.find_eulerian_tour(graph,position)
+        print('graph after block removal',graph)
 
+        tour = self.find_eulerian_tour(graph,position,visited,blocked)
 
+        print('tour before duplicate removal', tour)
         tour = self.remove_duplicates_from_tour(tour)
-        tour.reverse()
+        #tour.reverse()
 
 
         self.remove_repeat_visit(tour)
@@ -810,34 +885,64 @@ class travel:
         return tour
 
     # find the eulerian tour of the graph
-    def find_eulerian_tour(self,graph,start):
+    def find_eulerian_tour(self,graph,start,visited,blocked):
         whole_tour=[]
-        print graph
+        print('graph',graph)
         self.E = graph[:]                   # copy the graph so we don't destroy it
         First = True
         self.tour =[]
         self.find_tour(start)
-       # print('first tour',self.tour)
+        print('first tour',self.tour)
+        self.tour.reverse()
         for node in self.tour:
             whole_tour.append(node)
         while len(self.E)> 0:
             self.tour = []                      # the tour starts out empty
             self.find_tour(self.E[0][0])             # find a tour using the first node in the edge list
            # print('new tour found',self.tour)
-            for node in self.tour:
-                whole_tour.append(node)
+            seen=0
+            for i in range(len(self.tour)-1):
+                for vis in visited:
+                    print vis, self.tour[i],self.tour[i+1]
+                    if ((self.tour[i]==vis.edge.A.node_num) &(self.tour[i+1]==vis.edge.B.node_num))|((self.tour[i+1]==vis.edge.A.node_num) &(self.tour[i]==vis.edge.B.node_num)):
+                        seen+=1
+            if seen < len(self.tour)-1:
+                print('sub tour', self.tour)
+                print('seen is',seen)
+                #print('visited is', visited[0])
+                for node in self.tour:
+                    whole_tour.append(node)
+        #this is a check for edge cases where the tour was not a continuous path
+        print('whole tour', whole_tour)
+        temp=[]
+        for i in range(len(whole_tour)-1):
+            temp.append(whole_tour[i])
+            if((whole_tour[i],whole_tour[i+1]) not in graph )&((whole_tour[i],whole_tour[i+1]) not in graph):
+                temp_path = self.a_star(whole_tour[i],whole_tour[i+1],blocked)
+                for node in temp_path:
+                    temp.append(node.node_num)
+        print('temp',temp)
 
-        return whole_tour
+        return temp
 
     # find a single tour
     def find_tour(self,u):
         for (i, j) in self.E:           # find an edge with u as the source node
-            if i == u:             # check each edge going one way
-                self.E.remove((i, j))   # remove the found edge so it isn't used twice
-                self.find_tour(j)       # continue the tour from the sink node
-            elif j == u:           # check each edge going the other way if we need to
-                self.E.remove((i, j))
-                self.find_tour(i)
+
+
+                    if i == u:             # check each edge going one way
+                       # try:
+                            self.E.remove((i, j))   # remove the found edge so it isn't used twice
+                            self.find_tour(j)       # continue the tour from the sink node
+                        #except ValueError:
+                        #    continue
+                    elif j == u:           # check each edge going the other way if we need to
+                        #try:
+                            self.E.remove((i, j))
+                            self.find_tour(i)
+                        #except ValueError:
+                        #    continue
+
         self.tour.append(u)             # we found an edge from u, so its part of the tour
 
     # cut out any duplicates from a tour
@@ -875,7 +980,23 @@ class travel:
             tour.append(tour.pop(0))
         return tour
 
+    def graph_edge(self, pos):
+        x= []
+        y=[]
+        for i in range(len(self.path_times_list[pos].recordings)):
+            x.append(self.path_times_list[pos].recordings[i].date.minute+self.path_times_list[pos].recordings[i].date.hour*60)
+            y.append(self.path_times_list[pos].recordings[i].time.seconds+self.path_times_list[pos].recordings[i].time.microseconds/10**6.)
+        fig = matplotlib.pyplot.figure()
+        ax = fig.add_subplot(110)
+        print(x)
+        print(y)
 
+
+        ax.set_title('Edge traversals for edge between node {0} and node {1}'.format(self.path_times_list[pos].edge.A.node_num,self.path_times_list[pos].edge.B.node_num))
+        ax.set_xlabel('Time of day (minutes from midnight)', fontsize=20)
+        ax.set_ylabel('Time taken (seconds)', fontsize=20)
+        ax.scatter(x,y)
+        matplotlib.pyplot.show()
     def graph_path_times(self):
 
         x =[]
@@ -883,7 +1004,10 @@ class travel:
         for i in range(len(self.path_times_list)):
             for recording in self.path_times_list[i].recordings:
                 x.append(i)
-                y.append(recording.time.seconds+recording.time.microseconds/10**6.)
+                if recording is not None:
+                    y.append(recording.time.seconds+recording.time.microseconds/10**6.)
+                else:
+                    y.append(0)
         print(x)
         print(y)
         print(len(x))
@@ -891,8 +1015,9 @@ class travel:
 
         fig = matplotlib.pyplot.figure()
         ax = fig.add_subplot(111)
-        ax.set_xlabel('edge index', fontsize=20)
-        ax.set_ylabel('time taken (seconds)', fontsize=20)
+        ax.set_title('Edge Traversals')
+        ax.set_xlabel('Edge Index', fontsize=20)
+        ax.set_ylabel('Time Taken (Seconds)', fontsize=20)
         ax.scatter(x,y)
         matplotlib.pyplot.show()
 
@@ -900,21 +1025,57 @@ class travel:
     def naive_run(self):
         blocked = []
 
-        tour = self.euler_tour(self.current)
+        tour = self.euler_tour(self.current,True,[])
         print('Tour generated: ')
         print(tour)
         result =  self.follow_exploration_route(tour,0)
         while result is not True:#something went wrong in the run. get to the next node, avoiding the blocked one and try to carry on
+            print('heading back to previous node')
             self.head_to_position(self.nodes[tour[result-1]])##attempt to head back to the node we were at previously
             visited =[]
             for j in range(1,result-1):#create a list of all the nodes visited
                 visited.append((self.nodes[tour[j-1]],self.nodes[tour[j]]))
-            for path_time in  self.path_times_list:
+            for path_time in  self.path_times_list:# add the blocked node to the list of blocked nodes
                 if ((path_time.edge.A == self.nodes[tour[result-1]]) & (path_time.edge.B == self.nodes[tour[result]]))|((path_time.edge.B == self.nodes[tour[result-1]]) & (path_time.edge.A == self.nodes[tour[result]])):
                     blocked.append(path_time.edge)
+                    print('blocked being added to',path_time.edge.A, ', ',path_time.edge.B)
                     break
-            route = self.a_star(self.current,self.nodes[tour[result]].node_num,blocked)
-            self.follow_path(route)
+            tour = self.euler_tour(self.current,blocked,visited)
+            result = self.follow_exploration_route(tour,0)
+
+#            try:
+#                while result2 is not True:# attempt to get around the blockage
+#                    print('blocked list')
+#                    temp=[]
+#                    for edge in blocked:
+#                        temp.append((edge.A.node_num,edge.B.node_num))
+#                    print(temp)
+#                    route = self.a_star(self.current,self.nodes[tour[result]].node_num,blocked)
+#                    print('blocked list:')
+#                    temp=[]
+#                    for edge in blocked:
+#                        temp.append((edge.A.node_num,edge.B.node_num))
+#                    print(temp)
+#                    print('route around blocked node computed:')
+#                    temp =[]
+#                    for node in route:
+#                        temp.append(node.node_num)
+#                    print(temp)
+#                    print('route is ',route)
+#                    result2 =self.follow_path(route)
+#                    if result2 is not True:
+#                        for path_time in  self.path_times_list:
+#                            print('result2 is : {0}'.format(result2))
+#                            if ((path_time.edge.A == self.nodes[route[result2-1].node_num]) & (path_time.edge.B == self.nodes[route[result2].node_num]))|((path_time.edge.B == self.nodes[route[result2-1].node_num]) & (path_time.edge.A == self.nodes[route[result2].node_num])):
+#                                blocked.append(path_time.edge)
+#                                print('blocked being added to',path_time.edge.A, ', ',path_time.edge.B)
+#                                break
+#            except IndexError:
+#                print('could not find way to next node, cancelling run')
+#                print('blocked list is')
+#                print(blocked)
+#                return False
+
             result = self.follow_exploration_route(tour,result)
 
 
@@ -922,6 +1083,11 @@ class travel:
         for pt in self.path_times_list:
             print(pt)
         self.save_path_times()
+
+
+    def set_up_for_test(self):
+        self.load_graph()
+        self.initialize_path_times_from_nodes()
 
     def set_up_for_run(self):
         self.load_graph()
@@ -932,10 +1098,32 @@ class travel:
 
 def main(args):
     t = travel()
-    t.set_up_for_run()
-    t.naive_run()
-    t.naive_run()
-    t.graph_path_times()
+
+    t.set_up_for_test()
+    #t.initialize_test_map_two()
+    for node in t.nodes:
+        print node
+
+    blocked= [t.path_times_list[11].edge]
+    print blocked[0]
+    tour= t.euler_tour(0,blocked,[])
+    print(tour)
+
+   # t.load_path_times()
+
+#    blocked =[t.path_times_list[27].edge]#,t.path_times_list[28]]
+#
+#    print('blocked')
+#    for block in blocked:
+#        print block.A.node_num,block.B.node_num
+#    visited = [(t.path_times_list[24])]
+#
+#    tour =t.euler_tour(0,blocked,visited)
+#    print(tour)
+    #t.naive_run()
+    #t.naive_run()
+   # t.graph_path_times()
+   # t.graph_edge(1)
 
 
 
