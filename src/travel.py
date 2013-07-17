@@ -25,11 +25,11 @@ from travel_edge import travel_edge
 from a_star_node import a_star_node
 from path_time import path_time
 from path_times import path_times
-
+from edge_interpreter import edge_interpreter
+from clustering import clustering
 
 import numpy, scipy
-import scipy.cluster.hierarchy as hier
-import scipy.spatial.distance as dist
+
 
 
 roslib.load_manifest('node_traveller')
@@ -263,7 +263,18 @@ class travel:
         node60.add_connection(node61)
 
         self.nodes = [node0,node1,node2,node3,node4,node5,node6,node7,node8,node9,node10,node11,node12,node13,node14,node15,node16,node17,node18,node19,node20,node21,node22,node23,node24,node25,node26,node27,node28,node29,node30,node31,node32,node33,node34,node35,node36,node37,node38,node39,node40,node41,node42,node43,node44,node45,node46,node47,node48,node49,node50,node51,node52,node53,node54,node55,node56,node57,node58,node59,node60,node61]
+    def initialize_test_map_three(self):
+        node0 =travel_node(0,0,0)
+        node1=travel_node(1,1,1)
+        node2=travel_node(1,0,2)
+        node3=travel_node(0,1,3)
+        node0.add_connection(node1)
+        node0.add_connection(node2)
+        node0.add_connection(node3)
+        node1.add_connection(node2)
+        node2.add_connection(node3)
 
+        self.nodes=[node0,node1,node2,node3]
 
     # changes the robot's heading to point at a provided node, given the robot's position
     def set_heading(self,current,goal):
@@ -917,10 +928,11 @@ class travel:
         temp=[]
         for i in range(len(whole_tour)-1):
             temp.append(whole_tour[i])
-            if((whole_tour[i],whole_tour[i+1]) not in graph )&((whole_tour[i],whole_tour[i+1]) not in graph):
+            if((whole_tour[i],whole_tour[i+1]) not in graph )&((whole_tour[i+1],whole_tour[i]) not in graph):
                 temp_path = self.a_star(whole_tour[i],whole_tour[i+1],blocked)
                 for node in temp_path:
                     temp.append(node.node_num)
+
         print('temp',temp)
 
         return temp
@@ -980,7 +992,7 @@ class travel:
             tour.append(tour.pop(0))
         return tour
 
-    def graph_edge(self, pos):
+    def graph_edge(self, pos,show):
         x= []
         y=[]
         for i in range(len(self.path_times_list[pos].recordings)):
@@ -996,8 +1008,9 @@ class travel:
         ax.set_xlabel('Time of day (minutes from midnight)', fontsize=20)
         ax.set_ylabel('Time taken (seconds)', fontsize=20)
         ax.scatter(x,y)
-        matplotlib.pyplot.show()
-    def graph_path_times(self):
+        if show:
+            matplotlib.pyplot.show()
+    def graph_path_times(self,show):
 
         x =[]
         y=[]
@@ -1019,7 +1032,8 @@ class travel:
         ax.set_xlabel('Edge Index', fontsize=20)
         ax.set_ylabel('Time Taken (Seconds)', fontsize=20)
         ax.scatter(x,y)
-        matplotlib.pyplot.show()
+        if show:
+            matplotlib.pyplot.show()
 
 
     def naive_run(self):
@@ -1043,38 +1057,6 @@ class travel:
             tour = self.euler_tour(self.current,blocked,visited)
             result = self.follow_exploration_route(tour,0)
 
-#            try:
-#                while result2 is not True:# attempt to get around the blockage
-#                    print('blocked list')
-#                    temp=[]
-#                    for edge in blocked:
-#                        temp.append((edge.A.node_num,edge.B.node_num))
-#                    print(temp)
-#                    route = self.a_star(self.current,self.nodes[tour[result]].node_num,blocked)
-#                    print('blocked list:')
-#                    temp=[]
-#                    for edge in blocked:
-#                        temp.append((edge.A.node_num,edge.B.node_num))
-#                    print(temp)
-#                    print('route around blocked node computed:')
-#                    temp =[]
-#                    for node in route:
-#                        temp.append(node.node_num)
-#                    print(temp)
-#                    print('route is ',route)
-#                    result2 =self.follow_path(route)
-#                    if result2 is not True:
-#                        for path_time in  self.path_times_list:
-#                            print('result2 is : {0}'.format(result2))
-#                            if ((path_time.edge.A == self.nodes[route[result2-1].node_num]) & (path_time.edge.B == self.nodes[route[result2].node_num]))|((path_time.edge.B == self.nodes[route[result2-1].node_num]) & (path_time.edge.A == self.nodes[route[result2].node_num])):
-#                                blocked.append(path_time.edge)
-#                                print('blocked being added to',path_time.edge.A, ', ',path_time.edge.B)
-#                                break
-#            except IndexError:
-#                print('could not find way to next node, cancelling run')
-#                print('blocked list is')
-#                print(blocked)
-#                return False
 
             result = self.follow_exploration_route(tour,result)
 
@@ -1095,19 +1077,53 @@ class travel:
         self.initialize_path_times_from_nodes()
 
         self.get_current_node()
+    def graph_range(self,partitions,times,show):
+        x =[]
+        y=[]
+        for i in range(len(times)):
+            x.append((partitions[i]+partitions[i+1])/2)
+            y.append(times[i])
+
+
+        fig = matplotlib.pyplot.figure()
+        ax = fig.add_subplot(111)
+        ax.set_title('Edge Traversals')
+        ax.set_xlabel('Edge Index', fontsize=20)
+        ax.set_ylabel('Time Taken (Seconds)', fontsize=20)
+        ax.scatter(x,y)
+        if show:
+            matplotlib.pyplot.show()
 
 def main(args):
     t = travel()
 
-    t.set_up_for_test()
-    #t.initialize_test_map_two()
-    for node in t.nodes:
-        print node
+    t.set_up_for_run()
+    t.naive_run()
+    t.graph_path_times()
+    #t.initialize_test_map_three()
+    #t.initialize_path_times_from_nodes()
+    #t.current=0
+    #t.load_path_times()
+    #e = edge_interpreter()
+    #times = e.interpret(t.path_times_list[0],1)
 
-    blocked= [t.path_times_list[11].edge]
-    print blocked[0]
-    tour= t.euler_tour(0,blocked,[])
-    print(tour)
+    #t.graph_range(times[0],times[1],False)
+
+    #times= e.interpret(t.path_times_list[0],2)
+    #t.graph_range(times[0],times[1],True)
+    #edge =0
+    #c = clustering()
+    #c.cluster_path_times(t.path_times_list[edge],False)
+   # t.graph_edge(edge,True)
+
+
+    #for node in t.nodes:
+    #    print node
+
+   # blocked= [t.path_times_list[11].edge]
+   # print blocked[0]
+    #tour= t.euler_tour(0,blocked,[])
+    #print(tour)
 
    # t.load_path_times()
 
@@ -1122,8 +1138,8 @@ def main(args):
 #    print(tour)
     #t.naive_run()
     #t.naive_run()
-   # t.graph_path_times()
-   # t.graph_edge(1)
+    #t.graph_path_times(False)
+
 
 
 
