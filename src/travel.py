@@ -932,9 +932,12 @@ class travel:
                 temp_path = self.a_star(whole_tour[i],whole_tour[i+1],blocked)
                 for node in temp_path:
                     temp.append(node.node_num)
-            else:
-                if i ==len(whole_tour)-1:
-                    temp.append(whole_tour[i+1])
+        if temp[len(temp-1)] ==whole_tour[len(whole_tour)-1]:
+            print('ends identical')
+        else:
+            route = self.a_star(temp[len(temp-1)],whole_tour[len(whole_tour)-1],blocked)
+            for node in route:
+                temp.append(node.node_num)
         print('temp',temp)
 
         return temp
