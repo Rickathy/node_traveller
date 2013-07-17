@@ -932,7 +932,9 @@ class travel:
                 temp_path = self.a_star(whole_tour[i],whole_tour[i+1],blocked)
                 for node in temp_path:
                     temp.append(node.node_num)
-
+            else:
+                if i ==len(whole_tour)-1:
+                    temp.append(whole_tour[i+1])
         print('temp',temp)
 
         return temp
@@ -1098,8 +1100,9 @@ def main(args):
     t = travel()
 
     t.set_up_for_run()
+    #t.load_path_times()
     t.naive_run()
-    t.graph_path_times()
+    t.graph_path_times(True)
     #t.initialize_test_map_three()
     #t.initialize_path_times_from_nodes()
     #t.current=0
@@ -1113,7 +1116,7 @@ def main(args):
     #t.graph_range(times[0],times[1],True)
     #edge =0
     #c = clustering()
-    #c.cluster_path_times(t.path_times_list[edge],False)
+    #c.cluster_path_times(t.path_times_list[edge],True)
    # t.graph_edge(edge,True)
 
 
