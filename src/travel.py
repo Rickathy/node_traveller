@@ -6,7 +6,7 @@ import rospy
 import roslib
 import actionlib
 import tf
-from std_msgs.msg import UInt32
+from std_msgs.msg import UInt32,Int32MultiArray
 import sys
 #print('\n'.join(sorted(sys.path)))
 
@@ -44,6 +44,7 @@ class travel:
         self.move_base = actionlib.SimpleActionClient("move_base", MoveBaseAction)
         self.pub = rospy.Publisher("move_base",MoveBaseAction)
         self.dest_pub = rospy.Publisher("/node_traveller/dest",UInt32)
+        self.route_pub= rospy.Publisher("/node_traveller/route",Int32MultiArray)
         self.listener = tf.TransformListener()
         self.path_times_list = []
 
@@ -376,7 +377,7 @@ class travel:
 
                 if ((path_time.edge.A.node_num==self.current) & (path_time.edge.B.node_num==node.node_num )) | ((path_time.edge.B.node_num==self.current) & (path_time.edge.A.node_num==node.node_num )):
                     path_time.add_recording(None)
-
+                    self.save_path_times()
             return False
 
 
@@ -418,6 +419,8 @@ class travel:
                 if ((path_time.edge.A.node_num==self.current) & (path_time.edge.B.node_num==node.node_num )) | ((path_time.edge.B.node_num==self.current) & (path_time.edge.A.node_num==node.node_num )):
                     path_time.add_recording(datetime.today() -time_start)
                     print(  'time taken {0}'.format(datetime.today() -time_start))
+                    break
+        self.save_path_times()
         self.current = node.node_num
 
 
@@ -915,7 +918,7 @@ class travel:
             for i in range(len(self.tour)-1):
                 for vis in visited:
                     print vis, self.tour[i],self.tour[i+1]
-                    if ((self.tour[i]==vis.edge.A.node_num) &(self.tour[i+1]==vis.edge.B.node_num))|((self.tour[i+1]==vis.edge.A.node_num) &(self.tour[i]==vis.edge.B.node_num)):
+                    if ((self.tour[i]==vis.node_num) &(self.tour[i+1]==vis.node_num))|((self.tour[i+1]==vis.node_num) &(self.tour[i]==vis.node_num)):
                         seen+=1
             if seen < len(self.tour)-1:
                 print('sub tour', self.tour)
@@ -932,10 +935,10 @@ class travel:
                 temp_path = self.a_star(whole_tour[i],whole_tour[i+1],blocked)
                 for node in temp_path:
                     temp.append(node.node_num)
-        if temp[len(temp-1)] ==whole_tour[len(whole_tour)-1]:
+        if temp[len(temp)-1] ==whole_tour[len(whole_tour)-1]:
             print('ends identical')
         else:
-            route = self.a_star(temp[len(temp-1)],whole_tour[len(whole_tour)-1],blocked)
+            route = self.a_star(temp[len(temp)-1],whole_tour[len(whole_tour)-1],blocked)
             for node in route:
                 temp.append(node.node_num)
         print('temp',temp)
@@ -1047,6 +1050,9 @@ class travel:
         tour = self.euler_tour(self.current,True,[])
         print('Tour generated: ')
         print(tour)
+        m = Int32MultiArray()
+        m.data=tour
+        self.route_pub.publish(m)
         result =  self.follow_exploration_route(tour,0)
         while result is not True:#something went wrong in the run. get to the next node, avoiding the blocked one and try to carry on
             print('heading back to previous node')
@@ -1060,10 +1066,13 @@ class travel:
                     print('blocked being added to',path_time.edge.A, ', ',path_time.edge.B)
                     break
             tour = self.euler_tour(self.current,blocked,visited)
+            m = Int32MultiArray()
+            m.data=tour
+            self.route_pub.publish(m)
             result = self.follow_exploration_route(tour,0)
 
 
-            result = self.follow_exploration_route(tour,result)
+            #result = self.follow_exploration_route(tour,result)
 
 
         print('Run finished. Path times are:')
