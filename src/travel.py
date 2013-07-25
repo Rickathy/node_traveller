@@ -1079,6 +1079,9 @@ class travel:
         for pt in self.path_times_list:
             print(pt)
         self.save_path_times()
+        m = Int32MultiArray()
+        m.data=[]
+        self.route_pub.publish(m)
 
 
     def set_up_for_test(self):
@@ -1114,7 +1117,10 @@ def main(args):
     t.set_up_for_run()
     #t.load_path_times()
     t.naive_run()
+    t.naive_run()
+    t.save_path_times()
     t.graph_path_times(True)
+    #t.load_path_times()
     #t.initialize_test_map_three()
     #t.initialize_path_times_from_nodes()
     #t.current=0

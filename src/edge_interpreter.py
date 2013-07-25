@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from clustering import clustering
 
 class edge_interpreter:
     def __init__(self):
@@ -16,7 +17,10 @@ class edge_interpreter:
                 if type==2:
                     return self.interpret_ten_minute_averages(path_times.recordings)
                 else:
-                    return None
+                    if type==3:
+                        return self.interpret_clustering_ten_minutes(path_times.recordings)
+                    else:
+                        return None
     # Just return the average of all the times
     def interpret_average(self,times):
 
@@ -24,6 +28,7 @@ class edge_interpreter:
         for time in times:
             sum+=time.time.seconds+time.time.microseconds/10**6.
         return [0,1440],sum/len(times)# it's the whole day, so we only have one time interval
+    
     def interpret_hourly_average(self,times):
         average = self.interpret_average(times)[1]
         avs=[]
@@ -61,3 +66,54 @@ class edge_interpreter:
             partitions.append(i*10)
         partitions.append(24*60)
         return partitions,avs
+    
+    def interpret_clustering_ten_minutes(self,times):
+        c = clustering()
+        clusters=c.cluster_path_times(times,True)
+        print('clusters are:')
+        for key in clusters.keys():
+            print clusters[key]
+        averages=[]
+        main_average=0
+        total=0
+        for key in clusters.keys():
+            av_duration =0
+            for (duration,date)in clusters[key]:
+                av_duration+=duration
+                main_average+=duration
+                total+=1
+            av_duration/=len(clusters[key])
+            averages.append(av_duration)
+        main_average/=total
+        print averages
+        print main_average
+        bins_amts = []
+        bins_ests =[]
+        partitions=[]
+        for i in range(0,1440,10):#create a bin for each ten minutes of the day
+            bins_ests.append(0)
+            bins_amts.append(0)
+            partitions.append(i*10)
+        partitions.append(1440)
+        print clusters.keys()
+        for i in range(len(clusters.keys())):
+            for(duration,date) in clusters[clusters.keys()[i]]:
+                bins_amts[int(date)/10]+=1
+                try:
+                    bins_ests[int(date)/10]+=averages[i]
+                except IndexError:
+                    print int(date)/10
+                    print len(bins_amts)
+                    print clusters.keys()[i]
+                    raise
+                    
+        for i in range(0,144):
+            
+            if(bins_amts[i]>0):
+                
+                bins_ests[i]/=(bins_amts[i]*1.0)
+            else:
+                bins_ests=main_average
+        return partitions,bins_ests
+                
+
