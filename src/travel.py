@@ -1000,7 +1000,7 @@ class travel:
             tour.append(tour.pop(0))
         return tour
 
-    def graph_edge(self, pos,show):
+    def graph_edge(self, pos,show=False):
         x= []
         y=[]
         for i in range(len(self.path_times_list[pos].recordings)):
@@ -1025,9 +1025,9 @@ class travel:
         for i in range(len(self.path_times_list)):
             for recording in self.path_times_list[i].recordings:
                 x.append(i)
-                if recording is not None:
+                try:
                     y.append(recording.time.seconds+recording.time.microseconds/10**6.)
-                else:
+                except AttributeError:
                     y.append(0)
         print(x)
         print(y)
@@ -1115,7 +1115,7 @@ def main(args):
     t = travel()
 
     t.set_up_for_run()
-    #t.load_path_times()
+    t.load_path_times()
     t.naive_run()
     t.naive_run()
     t.save_path_times()

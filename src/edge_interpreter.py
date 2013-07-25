@@ -69,7 +69,7 @@ class edge_interpreter:
     
     def interpret_clustering_ten_minutes(self,times):
         c = clustering()
-        clusters=c.cluster_path_times(times,True)
+        clusters=c.cluster_path_times(times,False)
         print('clusters are:')
         for key in clusters.keys():
             print clusters[key]
@@ -90,7 +90,7 @@ class edge_interpreter:
         bins_amts = []
         bins_ests =[]
         partitions=[]
-        for i in range(0,1440,10):#create a bin for each ten minutes of the day
+        for i in range(0,144):#create a bin for each ten minutes of the day
             bins_ests.append(0)
             bins_amts.append(0)
             partitions.append(i*10)
@@ -110,10 +110,10 @@ class edge_interpreter:
         for i in range(0,144):
             
             if(bins_amts[i]>0):
-                
-                bins_ests[i]/=(bins_amts[i]*1.0)
+                print('bin amts is greater than 0 at {0}, bin ests is {1}, bin amts is {2}'.format(i,bins_ests[i],bins_amts[i]))
+                bins_ests[i]/=bins_amts[i]
             else:
-                bins_ests=main_average
+                bins_ests[i]=main_average
         return partitions,bins_ests
                 
 
