@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
 from clustering import clustering
+from exponential import exponential
+import math
+import sys
 
 class edge_interpreter:
     def __init__(self):
@@ -18,9 +21,12 @@ class edge_interpreter:
                     return self.interpret_ten_minute_averages(path_times.recordings)
                 else:
                     if type==3:
-                        return self.interpret_clustering_ten_minutes(path_times.recordings)
+                        return self.interpret_clustering_ten_minutes(path_times.recordings,True)
                     else:
-                        return None
+                        if type==4:
+                            return self.interpret_exponential(path_times.recordings)
+                        else:
+                            return None
     # Just return the average of all the times
     def interpret_average(self,times):
 
@@ -66,8 +72,13 @@ class edge_interpreter:
             partitions.append(i*10)
         partitions.append(24*60)
         return partitions,avs
-    
-    def interpret_clustering_ten_minutes(self,times):
+    '''
+    Given a set of times clusters on those times and produces a estimated traversal time from that clustering by
+    splitting the day into bins of 10 minutes
+    If the final parameter is true, will also return the entropies for each bin
+    '''
+    def interpret_clustering_ten_minutes(self,times,entropy=False,minimum_traversals=2,minute_interval=10):
+        
         c = clustering()
         clusters=c.cluster_path_times(times,False)
         print('clusters are:')
@@ -90,30 +101,76 @@ class edge_interpreter:
         bins_amts = []
         bins_ests =[]
         partitions=[]
-        for i in range(0,144):#create a bin for each ten minutes of the day
+        for i in range(0,1440/minute_interval):#create a bin for each ten minutes of the day
             bins_ests.append(0)
             bins_amts.append(0)
-            partitions.append(i*10)
+            partitions.append(i*minute_interval)
         partitions.append(1440)
         print clusters.keys()
         for i in range(len(clusters.keys())):
             for(duration,date) in clusters[clusters.keys()[i]]:
-                bins_amts[int(date)/10]+=1
-                try:
-                    bins_ests[int(date)/10]+=averages[i]
-                except IndexError:
-                    print int(date)/10
-                    print len(bins_amts)
-                    print clusters.keys()[i]
-                    raise
+                bins_amts[int(date)/minute_interval]+=1
+                bins_ests[int(date)/minute_interval]+=averages[i]
+             
                     
-        for i in range(0,144):
+        for i in range(0,1440/minute_interval):
             
             if(bins_amts[i]>0):
-                print('bin amts is greater than 0 at {0}, bin ests is {1}, bin amts is {2}'.format(i,bins_ests[i],bins_amts[i]))
+               
                 bins_ests[i]/=bins_amts[i]
             else:
                 bins_ests[i]=main_average
-        return partitions,bins_ests
-                
+        
+        entropies=[]
+        if entropy is True:
+            entropies=[]
+            for i in range(0,1440/minute_interval):
+                bin=[]
+                for j in range(len(clusters.keys())):
+                    for(duration,date) in clusters[clusters.keys()[j]]:
+                        if (date>=i*minute_interval) & (date<(i+1)*(minute_interval)):
+                            print(i*minute_interval, (i+1)*minute_interval)
+                            bin.append(j)
+                counts=dict()
+                total=len(bin)*1.0
+                for value in bin:
+                    
+                    try:
+                        counts[value]+=1
+                    except KeyError:
+                        counts[value]=1.
+                print counts
+                entropy=0
+                if total > minimum_traversals:
+                    for x in counts.keys():
+                        print(counts[x]/total)
+                        print counts[x]
+                        print total
+                        if counts[x] > 0:
+                            entropy-=counts[x]/total*math.log(counts[x]/total)
+                else:
+                    entropy=sys.maxint
+                entropies.append(entropy)
+            return partitions,bins_ests,entropies
+        else:   
+            return partitions,bins_ests
+    def interpret_exponential(self,recordings):
+        durations=[]
+
+        for recording in recordings:
+            durations.append(recording.time.seconds+recording.time.microseconds/10**6.)
+        total_average= sum(durations)/len(durations)
+        times_of_day=[]
+        for recording in recordings:
+            times_of_day.append(recording.date.hour*60+recording.date.minute)
+        e = exponential()
+        (partitions,lambdas)=e.calculate_distribution(durations,times_of_day)
+        expected_values=[]
+        for l in lambdas:
+            if l >0:
+                expected_values.append(1/l)
+            else:
+                expected_values.append(total_average)
+        return partitions,expected_values
+            
 

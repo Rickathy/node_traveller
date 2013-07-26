@@ -54,7 +54,11 @@ class travel:
 
     # load the pickled path times
     def load_path_times(self):
-        self.path_times_list = pickle.load( open( "path_times.pt", "rb" ) )
+        try:
+            self.path_times_list = pickle.load( open( "path_times.pt", "rb" ) )
+        except IOError:
+            print('No path times were present before')
+        
     #using the node list, initialize path times
     def initialize_path_times_from_nodes(self):
         edges =[]
@@ -355,7 +359,7 @@ class travel:
         goal.target_pose.pose.orientation.y =trans[1][1]
         goal.target_pose.pose.orientation.z =trans[1][2]
         goal.target_pose.pose.orientation.w =trans[1][3]
-
+        
         self.set_heading(trans,goal)
 
         # we want to use our new heading not the old one
@@ -373,11 +377,12 @@ class travel:
         result = self.move_base.send_goal_and_wait(goal)# send the goal and return whether it was completed or not
         if result is not 3:#something went wrong, 3 is success
             print('heading to node: {0} failed'.format(node.node_num))
-            for path_time in self.path_times_list:
+            if not rospy.is_shutdown():
+                for path_time in self.path_times_list:
 
-                if ((path_time.edge.A.node_num==self.current) & (path_time.edge.B.node_num==node.node_num )) | ((path_time.edge.B.node_num==self.current) & (path_time.edge.A.node_num==node.node_num )):
-                    path_time.add_recording(None)
-                    self.save_path_times()
+                    if ((path_time.edge.A.node_num==self.current) & (path_time.edge.B.node_num==node.node_num )) | ((path_time.edge.B.node_num==self.current) & (path_time.edge.A.node_num==node.node_num )):
+                        path_time.add_recording(None)
+                        self.save_path_times()
             return False
 
 
@@ -523,8 +528,11 @@ class travel:
     def follow_exploration_route(self, route, position_in_route):
         for i in range(position_in_route,len(route)):
             print('heading to {0} of {1}'.format(i,len(route)))
-            if self.head_to_position(self.nodes[route[i]]) is False:#There was a problem reaching that node
-                return i
+            if not rospy.is_shutdown():
+                if self.head_to_position(self.nodes[route[i]]) is False:#There was a problem reaching that node
+                    return i
+            else:
+                return False
         return True
     # follows a provided path (nodes need to be connected in the path for proper timing gathering)
     def follow_path(self, path):
@@ -1055,21 +1063,26 @@ class travel:
         self.route_pub.publish(m)
         result =  self.follow_exploration_route(tour,0)
         while result is not True:#something went wrong in the run. get to the next node, avoiding the blocked one and try to carry on
-            print('heading back to previous node')
-            self.head_to_position(self.nodes[tour[result-1]])##attempt to head back to the node we were at previously
-            visited =[]
-            for j in range(1,result-1):#create a list of all the nodes visited
-                visited.append((self.nodes[tour[j-1]],self.nodes[tour[j]]))
-            for path_time in  self.path_times_list:# add the blocked node to the list of blocked nodes
-                if ((path_time.edge.A == self.nodes[tour[result-1]]) & (path_time.edge.B == self.nodes[tour[result]]))|((path_time.edge.B == self.nodes[tour[result-1]]) & (path_time.edge.A == self.nodes[tour[result]])):
-                    blocked.append(path_time.edge)
-                    print('blocked being added to',path_time.edge.A, ', ',path_time.edge.B)
-                    break
-            tour = self.euler_tour(self.current,blocked,visited)
-            m = Int32MultiArray()
-            m.data=tour
-            self.route_pub.publish(m)
-            result = self.follow_exploration_route(tour,0)
+            if not rospy.is_shutdown():
+                print('heading back to previous node')
+                self.head_to_position(self.nodes[tour[result-1]])##attempt to head back to the node we were at previously
+                visited =[]
+                for j in range(1,result-1):#create a list of all the nodes visited
+                    visited.append((self.nodes[tour[j-1]],self.nodes[tour[j]]))
+                for path_time in  self.path_times_list:# add the blocked node to the list of blocked nodes
+                    if ((path_time.edge.A == self.nodes[tour[result-1]]) & (path_time.edge.B == self.nodes[tour[result]]))|((path_time.edge.B == self.nodes[tour[result-1]]) & (path_time.edge.A == self.nodes[tour[result]])):
+                        blocked.append(path_time.edge)
+                        print('blocked being added to',path_time.edge.A, ', ',path_time.edge.B)
+                        break
+                tour = self.euler_tour(self.current,blocked,visited)
+                m = Int32MultiArray()
+                m.data=tour
+                self.route_pub.publish(m)
+                result = self.follow_exploration_route(tour,0)
+            else:
+                print('Run cancelled, saving path times')
+                self.save_path_times()
+                return False
 
 
             #result = self.follow_exploration_route(tour,result)
@@ -1094,32 +1107,41 @@ class travel:
         self.initialize_path_times_from_nodes()
 
         self.get_current_node()
-    def graph_range(self,partitions,times,show):
+    def graph(self,x,y,title,xlabel,ylabel,show):
+        fig = matplotlib.pyplot.figure()
+        ax = fig.add_subplot(111)
+        ax.set_title(title)
+        ax.set_xlabel(xlabel, fontsize=20)
+        ax.set_ylabel(ylabel, fontsize=20)
+        ax.scatter(x,y)
+        
+        if show:
+            matplotlib.pyplot.show()
+    def graph_range(self,partitions,times,title,show=False):
         x =[]
         y=[]
         for i in range(len(times)):
             x.append((partitions[i]+partitions[i+1])/2)
             y.append(times[i])
-
-
-        fig = matplotlib.pyplot.figure()
-        ax = fig.add_subplot(111)
-        ax.set_title('Edge Traversals')
-        ax.set_xlabel('Edge Index', fontsize=20)
-        ax.set_ylabel('Time Taken (Seconds)', fontsize=20)
-        ax.scatter(x,y)
-        if show:
-            matplotlib.pyplot.show()
+        self.graph(x,y,title,'Time of day','Expected Time Taken (Seconds)',show)
+    def gather_data_forever(self):
+         self.set_up_for_run()
+         self.load_path_times()
+         while not rospy.is_shutdown():
+            self.naive_run()
+            self.save_path_times()
+         self.graph_path_times(True)
+    def gather_data_once(self):
+         self.set_up_for_run()
+         self.load_path_times()
+         self.naive_run()
+         self.save_path_times()
+         self.graph_path_times(True)
+        
 
 def main(args):
     t = travel()
-
-    t.set_up_for_run()
-    t.load_path_times()
-    t.naive_run()
-    t.naive_run()
-    t.save_path_times()
-    t.graph_path_times(True)
+    t.gather_data_once()
     #t.load_path_times()
     #t.initialize_test_map_three()
     #t.initialize_path_times_from_nodes()

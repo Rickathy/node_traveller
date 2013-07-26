@@ -12,11 +12,14 @@ def main(args):
     t.load_path_times()
     t.current=0
     t.graph_path_times(False)
-    e = edge_interpreter()
-    times = e.interpret(t.path_times_list[edge],3)
-    print times
     t.graph_edge(edge)
-    t.graph_range(times[0],times[1],True)
+    e = edge_interpreter()
+    times = e.interpret(t.path_times_list[edge],4)
+    t.graph_range(times[0],times[1],'exponential method',True)
+    
+    times = e.interpret(t.path_times_list[edge],3)
+    t.graph_range(times[0],times[1],'clustering method',True)
+    #t.graph_range(times[0],times[2],True)
     
 
 
