@@ -926,7 +926,7 @@ class travel:
             for i in range(len(self.tour)-1):
                 for vis in visited:
                     print vis, self.tour[i],self.tour[i+1]
-                    if ((self.tour[i]==vis.node_num) &(self.tour[i+1]==vis.node_num))|((self.tour[i+1]==vis.node_num) &(self.tour[i]==vis.node_num)):
+                    if ((self.tour[i]==vis[0].node_num) &(self.tour[i+1]==vis[1].node_num))|((self.tour[i+1]==vis[0].node_num) &(self.tour[i]==vis[1].node_num)):
                         seen+=1
             if seen < len(self.tour)-1:
                 print('sub tour', self.tour)
@@ -1081,6 +1081,9 @@ class travel:
                 result = self.follow_exploration_route(tour,0)
             else:
                 print('Run cancelled, saving path times')
+                m = Int32MultiArray()
+                m.data=[]
+                self.route_pub.publish(m)
                 self.save_path_times()
                 return False
 
