@@ -47,6 +47,7 @@ class travel:
         self.route_pub= rospy.Publisher("/node_traveller/route",Int32MultiArray)
         self.listener = tf.TransformListener()             
         rospy.on_shutdown(self.end_route)
+        self.graph_file = rospy.get_param("~graph", "map1.graph")
         self.path_times_list = []
 
     # pickle path_times for use later
@@ -548,7 +549,7 @@ class travel:
 
 
     def load_graph(self):
-        graph_file = open('map1.graph', "r")
+        graph_file = open(self.graph_file, "r")
         g = pickle.load(graph_file)
         nodes = g[0]
         edges = g[1]
