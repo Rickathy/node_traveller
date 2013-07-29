@@ -18,7 +18,7 @@ In order to run it, there are a few packages that need to be installed (as well 
 ####Usage:
 
 Run the program using the command line below, replacing **FILEPATH** by the path to the *.graph* file that you want to work with.
->rosrun node_traveller travel.py _graph:="**FILEPATH**"
+>rosrun node_traveller travel.py _graph:=\"**FILEPATH**\"
 
 Alternatively, you can omit the *_graph* parameter, and the program will use the default graph file (as of now, it is *map1.graph*)
 >rosrun node_traveller travel.py
