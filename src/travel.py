@@ -45,7 +45,8 @@ class travel:
         self.pub = rospy.Publisher("move_base",MoveBaseAction)
         self.dest_pub = rospy.Publisher("/node_traveller/dest",UInt32)
         self.route_pub= rospy.Publisher("/node_traveller/route",Int32MultiArray)
-        self.listener = tf.TransformListener()
+        self.listener = tf.TransformListener()             
+        rospy.on_shutdown(self.end_route)
         self.path_times_list = []
 
     # pickle path_times for use later
@@ -1081,9 +1082,6 @@ class travel:
                 result = self.follow_exploration_route(tour,0)
             else:
                 print('Run cancelled, saving path times')
-                m = Int32MultiArray()
-                m.data=[]
-                self.route_pub.publish(m)
                 self.save_path_times()
                 return False
 
@@ -1140,6 +1138,11 @@ class travel:
          self.naive_run()
          self.save_path_times()
          self.graph_path_times(True)
+         
+    def end_route(self):        
+        m = Int32MultiArray()
+        m.data=[-1]
+        self.route_pub.publish(m)
         
 
 def main(args):
