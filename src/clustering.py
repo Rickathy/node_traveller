@@ -19,17 +19,21 @@ class clustering:
         X=[]
 
         for recording in recordings:
-            X.append(recording.time.seconds+recording.time.microseconds/10**6.)
+            try:
+                X.append(recording.time.seconds+recording.time.microseconds/10**6.)
+            except AttributeError:
+                X.append(0)
         times_of_day=[]
         for recording in recordings:
             times_of_day.append(recording.date.hour*60+recording.date.minute)
-        print X
+        #print X
         Y=[]
         for x in X:
             temp=[]
             for x2 in X:
                 temp.append(x-x2)
             Y.append(temp)
+            
         #Y=pdist(X)
         Z=linkage(Y)
        # print('Z', Z)
@@ -44,6 +48,8 @@ class clustering:
         if display:
             show()
         return clusters
+    
+                
     #calculate the variances of each set of clusters as they are made
     def generate_clusters(self,data_set,linkage_matrix,times_of_day):
         clusters =[]
@@ -58,7 +64,7 @@ class clustering:
         #print var_sum
         var_sum.append(var_temp)
         genes = dict()
-        print linkage_matrix
+        #print linkage_matrix
         for i in range(len(clusters)):
             genes[i]= clusters[i]
         #print('genes', genes)
@@ -88,7 +94,7 @@ class clustering:
         for i in range(len(grads)):
             if grads[i] > grad_av:
                 change_point=i
-                print(i,'  gradient is greater than average')
+                #print(i,'  gradient is greater than average')
                 
         genes = dict()  
         for i in range(len(clusters)):
@@ -110,7 +116,7 @@ class clustering:
     def variance(self, cluster):
         
         av_time=0
-        print cluster
+        #print cluster
         for time in cluster:
           
             av_time+=time

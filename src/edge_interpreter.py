@@ -77,13 +77,13 @@ class edge_interpreter:
     splitting the day into bins of 10 minutes
     If the final parameter is true, will also return the entropies for each bin
     '''
-    def interpret_clustering_ten_minutes(self,times,entropy=False,minimum_traversals=2,minute_interval=10):
+    def interpret_clustering_ten_minutes(self,times,entropy=False,minimum_traversals=1,minute_interval=10):
         
         c = clustering()
         clusters=c.cluster_path_times(times,False)
-        print('clusters are:')
-        for key in clusters.keys():
-            print clusters[key]
+        #print('clusters are:')
+        #for key in clusters.keys():
+         #   print clusters[key]
         averages=[]
         main_average=0
         total=0
@@ -96,8 +96,8 @@ class edge_interpreter:
             av_duration/=len(clusters[key])
             averages.append(av_duration)
         main_average/=total
-        print averages
-        print main_average
+        #print averages
+        #print main_average
         bins_amts = []
         bins_ests =[]
         partitions=[]
@@ -106,7 +106,7 @@ class edge_interpreter:
             bins_amts.append(0)
             partitions.append(i*minute_interval)
         partitions.append(1440)
-        print clusters.keys()
+        #print clusters.keys()
         for i in range(len(clusters.keys())):
             for(duration,date) in clusters[clusters.keys()[i]]:
                 bins_amts[int(date)/minute_interval]+=1
@@ -129,7 +129,7 @@ class edge_interpreter:
                 for j in range(len(clusters.keys())):
                     for(duration,date) in clusters[clusters.keys()[j]]:
                         if (date>=i*minute_interval) & (date<(i+1)*(minute_interval)):
-                            print(i*minute_interval, (i+1)*minute_interval)
+                           # print(i*minute_interval, (i+1)*minute_interval)
                             bin.append(j)
                 counts=dict()
                 total=len(bin)*1.0
@@ -139,13 +139,13 @@ class edge_interpreter:
                         counts[value]+=1
                     except KeyError:
                         counts[value]=1.
-                print counts
+                #print counts
                 entropy=0
-                if total > minimum_traversals:
+                if total >= minimum_traversals:
                     for x in counts.keys():
-                        print(counts[x]/total)
-                        print counts[x]
-                        print total
+                       # print('counts/total',counts[x]/total)
+                        #print 'counts[x]',counts[x]
+                        #print 'total',total
                         if counts[x] > 0:
                             entropy-=counts[x]/total*math.log(counts[x]/total)
                 else:
