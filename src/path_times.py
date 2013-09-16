@@ -8,6 +8,8 @@ class path_times:
         self.recordings = []
     def add_recording(self, time_taken):
         self.recordings.append(path_time.path_time(datetime.today(),time_taken))
+    def add_false_recording(self, duration, time):
+        self.recordings.append(path_time.path_time(time,duration))
     def __str__(self):
         path_string =[]
         for recording in self.recordings:

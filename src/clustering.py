@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 class clustering:
     def __init__(self):
         return
-    def cluster_path_times(self, recordings,display=False):
+    def cluster_path_times(self, recordings,display=False,days=False):
         
         X=[]
 
@@ -22,10 +22,14 @@ class clustering:
             try:
                 X.append(recording.time.seconds+recording.time.microseconds/10**6.)
             except AttributeError:
+                
                 X.append(0)
         times_of_day=[]
         for recording in recordings:
-            times_of_day.append(recording.date.hour*60+recording.date.minute)
+            if days ==True:
+                times_of_day.append(recording.date.weekday()*60*24+recording.date.hour*60+recording.date.minute)
+            else:
+                times_of_day.append(recording.date.hour*60+recording.date.minute)
         #print X
         Y=[]
         for x in X:
@@ -35,9 +39,11 @@ class clustering:
             Y.append(temp)
             
         #Y=pdist(X)
+       
         Z=linkage(Y)
        # print('Z', Z)
-        dendrogram(Z)
+       # print Z
+        #dendrogram(Z)
        # for i in range(len(X)):
         #    print('{0}, {1}'.format(i,X[i]))
        # print('Z', Z)

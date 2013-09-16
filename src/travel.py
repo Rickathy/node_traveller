@@ -47,7 +47,7 @@ class travel:
         self.route_pub= rospy.Publisher("/node_traveller/route",Int32MultiArray)
         self.listener = tf.TransformListener()             
         rospy.on_shutdown(self.end_route)
-        self.graph_file = rospy.get_param("~graph", "map1.graph")
+        self.graph_file = rospy.get_param("~graph", "cafe.graph")
         self.path_times_list = []
 
     # pickle path_times for use later
@@ -58,6 +58,7 @@ class travel:
     def load_path_times(self):
         try:
             self.path_times_list = pickle.load( open( "path_times.pt", "rb" ) )
+            
         except IOError:
             print('No path times were present before')
         
@@ -71,8 +72,9 @@ class travel:
         print('Path times initialized')
         for edge in edges:
             self.path_times_list.append(path_times(edge))
-        for path_time in  self.path_times_list:
-            print(path_time)
+        for i in range(len(self.path_times_list)):
+            print('{0}: {1}'.format(i,self.path_times_list[i]))
+        
 
     # initializes a test map to be used for navigation testing
     def initialize_test_map(self,num):
@@ -484,7 +486,7 @@ class travel:
                 inblocked=False
                 if blocked is not True:
                     for block in blocked:
-                   #' print edge.A.node_num,' ',block.edge.A.node_num,' ', edge.B.node_num ,' ',block.edge.B.node_num
+                        #print edge.A.node_num,' ',block.edge.A.node_num,' ', edge.B.node_num ,' ',block.edge.B.node_num
                         if ((edge.A.node_num==block.A.node_num)&(edge.B.node_num==block.B.node_num))|((edge.B.node_num==block.A.node_num)&(edge.A.node_num==block.B.node_num)):
 
                             inblocked=True
@@ -534,12 +536,16 @@ class travel:
                     print 'time is now',10*int((datetime.today().hour*60+datetime.today().minute)/10)
                     if 10*int((datetime.today().hour*60+datetime.today().minute)/10)>=time_until:
                         print('time is up on this run')
-                        return False
+                        self.end_route()
+                        return True
                 if self.head_to_position(self.nodes[route[i]]) is False:#There was a problem reaching that node
                     print('Got to node {0} in route'.format(i))
+                    self.end_route()
                     return i
             else:
+                self.end_route()
                 return False
+        self.end_route()
         return True
     # follows a provided path (nodes need to be connected in the path for proper timing gathering)
     def follow_path(self, path):
@@ -624,7 +630,7 @@ class travel:
     # create a matrix stating the distance between each odd node
     def create_odd_graph(self,blocked,whole ,position):
         odd_list = self.find_odd_nodes(blocked,whole,position)
-        #print('odd list', odd_list)
+        print('odd list', odd_list)
         matrix =[]
         for start in odd_list:
             current =[]
@@ -664,7 +670,7 @@ class travel:
         visited = []
         connections = []
         additions=0
-       # print('graph',graph)
+        print('graph',graph)
        # print(len(graph))
         if(len(graph)==0):
             return []
@@ -696,9 +702,9 @@ class travel:
             additions +=1
             visited.append(pos[0])
             visited.append(pos[1])
-          #  print('route print', route)
-          #  for node in route:
-          #      print node.node_num
+            print('route print', route)
+            for node in route:
+                print node.node_num
           #  print('start pos ',self.nodes[position].node_num)
 
             if nodes[pos[0]] == self.nodes[position].node_num:
@@ -916,12 +922,12 @@ class travel:
     # find the eulerian tour of the graph
     def find_eulerian_tour(self,graph,start,visited,blocked):
         whole_tour=[]
-        print('graph',graph)
+       # print('graph',graph)
         self.E = graph[:]                   # copy the graph so we don't destroy it
         First = True
         self.tour =[]
         self.find_tour(start)
-        print('first tour',self.tour)
+        #print('first tour',self.tour)
         self.tour.reverse()
         for node in self.tour:
             whole_tour.append(node)
@@ -936,13 +942,13 @@ class travel:
                     if ((self.tour[i]==vis[0].node_num) &(self.tour[i+1]==vis[1].node_num))|((self.tour[i+1]==vis[0].node_num) &(self.tour[i]==vis[1].node_num)):
                         seen+=1
             if seen < len(self.tour)-1:
-                print('sub tour', self.tour)
-                print('seen is',seen)
+              #  print('sub tour', self.tour)
+         #       print('seen is',seen)
                 #print('visited is', visited[0])
                 for node in self.tour:
                     whole_tour.append(node)
         #this is a check for edge cases where the tour was not a continuous path
-        print('whole tour', whole_tour)
+       # print('whole tour', whole_tour)
         temp=[]
         for i in range(len(whole_tour)-1):
             temp.append(whole_tour[i])
@@ -950,13 +956,13 @@ class travel:
                 temp_path = self.a_star(whole_tour[i],whole_tour[i+1],blocked)
                 for node in temp_path:
                     temp.append(node.node_num)
-        if temp[len(temp)-1] ==whole_tour[len(whole_tour)-1]:
-            print('ends identical')
+       # if temp[len(temp)-1] ==whole_tour[len(whole_tour)-1]:
+          #  print('ends identical')
         else:
             route = self.a_star(temp[len(temp)-1],whole_tour[len(whole_tour)-1],blocked)
             for node in route:
                 temp.append(node.node_num)
-        print('temp',temp)
+        #print('temp',temp)
 
         return temp
 
@@ -1020,7 +1026,10 @@ class travel:
         y=[]
         for i in range(len(self.path_times_list[pos].recordings)):
             x.append(self.path_times_list[pos].recordings[i].date.minute+self.path_times_list[pos].recordings[i].date.hour*60)
-            y.append(self.path_times_list[pos].recordings[i].time.seconds+self.path_times_list[pos].recordings[i].time.microseconds/10**6.)
+            try:
+                y.append(self.path_times_list[pos].recordings[i].time.seconds+self.path_times_list[pos].recordings[i].time.microseconds/10**6.)
+            except AttributeError:
+                y.append(0)
         fig = matplotlib.pyplot.figure()
         ax = fig.add_subplot(110)
         print('info on the edge traversals')
@@ -1148,15 +1157,16 @@ class travel:
         
         if show:
             matplotlib.pyplot.show()
-        matplotlib.pyplot.close()
-    def graph_range(self,partitions,times,title,show=False):
+       # matplotlib.pyplot.close()
+    def graph_range(self,partitions,times,title,show=False,xaxis='Time of day',yaxis='Expected Time Taken (Seconds)'):
         
         x =[]
         y=[]
         for i in range(len(times)):
-            x.append((partitions[i]+partitions[i+1])/2)
-            y.append(times[i])
-        self.graph(x,y,title,'Time of day','Expected Time Taken (Seconds)',show)
+            if times[i] < sys.maxint:
+                x.append((partitions[i]+partitions[i+1])/2)
+                y.append(times[i])
+        self.graph(x,y,title,xaxis,yaxis,show)
     def gather_data_forever(self):
          self.set_up_for_run()
          self.load_path_times()
@@ -1164,16 +1174,22 @@ class travel:
             self.naive_run()
             self.save_path_times()
          self.graph_path_times(True)
-    def gather_data_entropy_clusters(self):
+    def gather_data_entropy_clusters(self,days=False):
+        print 'days in gather data',days
         self.set_up_for_run()
         self.load_path_times()
-        current_time = 10*int((datetime.today().hour*60+datetime.today().minute)/10)
-        print('current time',current_time)
-        tour = self.generate_route_entropy_clusters([],current_time)
-        print('next time is', current_time+10)
-        result = self.follow_exploration_route(tour,0,current_time+10)
-        blocked=[]
         while not rospy.is_shutdown():
+            if days:
+                current_time = 10*int((datetime.today().weekday()*24*60+datetime.today().hour*60+datetime.today().minute)/10)
+            else:
+                current_time = 10*int((datetime.today().hour*60+datetime.today().minute)/10)
+            print('current time',current_time)
+            tour = self.generate_route_entropy([],current_time,0.25,days)
+            print('next time is', current_time+10)
+            result = self.follow_exploration_route(tour,0,current_time+10)
+            
+            blocked=[]
+            finished_run=False
             while result is not True:#something went wrong in the run. get to the next node, avoiding the blocked one and try to carry on
                 if not rospy.is_shutdown():
                     print('heading back to previous node')
@@ -1184,36 +1200,40 @@ class travel:
                             print('blocked being added to',path_time.edge.A, ', ',path_time.edge.B)
                             break
                     print('blocked is: {0}:'.format(blocked))
-                    new_time =10*int((datetime.today().hour*60+datetime.today().minute)/10)
+                    if days:
+                        new_time =10*int((datetime.today().weekday()*24*60+datetime.today().hour*60+datetime.today().minute)/10)
+                    else:
+                        new_time =10*int((datetime.today().hour*60+datetime.today().minute)/10)
                     if new_time != current_time:
-                        current_time=new_time
-                        blocked=[]
-                    route = self.generate_route_entropy_clusters(blocked,current_time)
-                    result = self.follow_exploration_route(route,0,new_time)
+                        finished_run=True
+                        break
+                    route = self.generate_route_entropy(blocked,current_time,days)
+                    result = self.follow_exploration_route(route,0,current_time+10)
                 else:
                     print('Run cancelled, saving path times')
                     self.save_path_times()
                     return False
+            if finished_run == True:
             ### we have finished a run, and have some time until the next one should start, this means we can position ourself at the best place to start the next run!
-            next_node = self.get_first_node_clusters(current_time+10)
-            route = self.a_star_route(self.current,next_node,[])
-            print('heading to node for next time')
-            result =self.follow_exploration_route(route)
-            if result== True:
-                print('next node reached')
-            else:
-                print('route to next node blocked, I\'ll wait here')
-            #rospy.sleep(((current_time+10)-(datetime.today().hour*60+datetime.today().minute))*60)
-        print('Run finished. Path times are:')
-        #for pt in self.path_times_list:
-         #   print(pt)
-        self.save_path_times()
-        m = Int32MultiArray()
-        m.data=[]
-        self.route_pub.publish(m)
+                next_node = self.get_first_node_clusters(current_time+10,days)
+                route = self.a_star(self.current,next_node,[])
+                print('heading to node for next time')
+                result =self.follow_exploration_route(route)
+                if result== True:
+                    print('next node reached')
+                else:
+                    print('route to next node blocked, I\'ll wait here')
+                #rospy.sleep(((current_time+10)-(datetime.today().hour*60+datetime.today().minute))*60)
+            print('Tour finished. ')
+            #for pt in self.path_times_list:
+             #   print(pt)
+            self.save_path_times()
+            m = Int32MultiArray()
+            m.data=[]
+            self.route_pub.publish(m)
         
-    def get_first_node_clusters(self,next_time):
-        entropies = self.generate_entropies()
+    def get_first_node_clusters(self,next_time,days,type):
+        entropies = self.generate_entropies(days,type)
         current_index = next_time/10
         current_entropies =[]
         print len(entropies)
@@ -1223,16 +1243,16 @@ class travel:
         import operator
         sorted_entropies= sorted(enumerate(current_entropies), key=operator.itemgetter(1))
         return sorted_entropies[0][0]
-    def generate_route_entropy_clusters(self,blocked,current_time):
-        
-        entropies = self.generate_entropies()
+    def generate_route_entropy(self,blocked,current_time,minimum_entropy=0,days=False,type=4):
+        #print 'days in gen route ent clus', days
+        entropies = self.generate_entropies(days,type)
+        #print 'len entropies', len(entropies[1])
         current_index = current_time/10
         current_entropies =[]
-        print len(entropies)
-        print len(entropies[0])
+        
         max_count=0
         count=0
-        print('current time',current_time)
+        #print('current time',current_time)
         print current_index
         for i in range(len(entropies)):
             if entropies[i][current_index] == sys.maxint :
@@ -1240,7 +1260,7 @@ class travel:
             count+=1
             
             current_entropies.append(entropies[i][current_index])
-        print('{0} of {1} edges had max entropy'.format(max_count,count))    
+        #print('{0} of {1} edges had max entropy'.format(max_count,count))    
         
         if max_count == count:# we've got only max entropies, the graph hasn't been explored at this time yet
             
@@ -1255,8 +1275,16 @@ class travel:
         position = self.current
         sorted_entropies.reverse()
         print sorted_entropies
+        count=0
         for (index, entropy) in sorted_entropies:
-            print('index {0}'.format(index))
+            
+            if entropy<minimum_entropy:
+                #print entropy
+                #print minimum_entropy
+                #print('there were {0} entropies to investigate'.format(count))
+                break
+            count+=1
+            #print('index {0}'.format(index))
             used_before=False
             for (A,B) in seen:
                 
@@ -1281,20 +1309,21 @@ class travel:
                             route=routeB
                             route.append( self.path_times_list[index].edge.A)
                         else:
-                            
+                            route=[]
                             route.append(self.path_times_list[index].edge.A)
                 else: 
                     #print 'A=0'
                     #route=routeB
+                    route=[]
                     route.append( self.path_times_list[index].edge.B)
                 
                 #print route
-                print('new part')
+               # print('new part')
                 for node in route:
                     print(node.node_num)
                     
                     
-                print 'length', len(route)
+               # print 'length', len(route)
                 
                 position = route[len(route)-1].node_num
                 for node in route:
@@ -1305,15 +1334,23 @@ class travel:
         temp =[]
         for node in tour:
             temp.append(node.node_num)
+        #if temp==[]:
+        #    print 'nothing to investigate'
+        #else:
+         #   print('route is', temp)
         return temp
         
         
-    def generate_entropies(self):
+    def generate_entropies(self,days=False,type=3):
         entropies=[]
         e = edge_interpreter()
         for edge in range(len(self.path_times_list)):
             #print e.interpret_clustering_ten_minutes(self.path_times_list[edge].recordings,True)
-            entropies.append(e.interpret_clustering_ten_minutes(self.path_times_list[edge].recordings,True)[2])
+            if type==3:
+                entropies.append(e.interpret_clustering_ten_minutes(self.path_times_list[edge].recordings,True,2,10,days)[2])
+            else:
+                
+                entropies.append(e.interpret_exponential(self.path_times_list[edge].recordings,True,10,True)[2])
         return entropies
         
     def gather_data_once(self):
@@ -1327,11 +1364,115 @@ class travel:
         m = Int32MultiArray()
         m.data=[-1]
         self.route_pub.publish(m)
+   
+    def a_star_route_advanced(self,time,type,position,destination,days):
+        blocked = self.a_star_route_setup(time, type,days)
+       # print 'blocked', blocked
+        try:
+            return self.a_star(position, destination, blocked)
+        except IndexError:
+            return []
+   
+    def a_star_route_setup(self,time,type,days):
+        index=time/10
+        e=edge_interpreter()
+        blocked=[]
+        for i in range(len(self.path_times_list)):
+            
+            times = e.interpret(self.path_times_list[i],type,days)
+            #print 'times', times[1]
+            
+            if ((type==3)&(times[1][index]==-1))|((type==4)&(times[1][index]==0)):
+                blocked.append(self.path_times_list[i].edge)
+            else:
+                self.path_times_list[i].edge.cost= times[1][index]
+           
+       
+        temp=[]
+        from math import ceil
+        for i in range(len(self.path_times_list)):
+            temp.append(ceil(self.path_times_list[i].edge.cost*100)/100)
+        return blocked
+    def temp_remove_records_after(self,day,month,year):
         
-
+        for path_time in self.path_times_list:
+            for i in range(len(path_time.recordings)-1):
+               # print 'year,',path_time.recordings[i].date.year
+               # print 'month',path_time.recordings[i].date.month
+                #print 'day', path_time.recordings[i].date.day
+                if path_time.recordings[i].date.year>year:
+                    #print 'into remove'
+                    for x in path_time.recordings[i:len(path_time.recordings)]:
+                                path_time.recordings.remove(x)
+                    break
+                else:
+                    if (path_time.recordings[i].date.year==year) & (path_time.recordings[i].date.month>month):
+                         for x in path_time.recordings[i:len(path_time.recordings)]:
+                                path_time.recordings.remove(x)
+                         break
+                    else:
+                       # print 'last bit'
+                        if  (path_time.recordings[i].date.year==year) & (path_time.recordings[i].date.month==month) & ( path_time.recordings[i].date.day>day):
+                           #print('years {0}, {1}'.format(path_time.recordings[i].date.year,year)
+                           #print('months {0}, {1}'.format(path_time.recordings[i].date.month,month)
+                           #print('days {0}, {1}'.format(path_time.recordings[i].date.day,day)
+                           #print 'into remove'
+                           for x in path_time.recordings[i:len(path_time.recordings)]:
+                                path_time.recordings.remove(x)
+                           break
+    def system_entropy_between_times(self,start,end):
+        e = self.generate_entropies()
+        #print e
+        times = []
+        for i in range(start,end):
+            times.append(0)
+        for path in e:
+            #print len(path)
+            
+            for i in  range(start,end):
+                #print 'i is ',i
+                #print 'e is {0}'.format(path[i])
+                times[i-start]+=path[i]
+        for time in times:
+            time/=len(e)
+        #times/=len(e)
+        return times
+    def graph_edge_entropy_between_times(self,edge,start,end,show=False):
+        e = edge_interpreter()
+        times = e.interpret(self.path_times_list[edge],3)
+        print times[0][start:end+1],'\n',times[2][start:end]
+        self.graph_range(times[0][start:end+1],times[2][start:end], 'entropies between {0} and {1}'.format(start,end),show)
+    def graph_edge_confidence_between_times(self,edge,start,end,show=False):
+        e = edge_interpreter()
+        times = e.interpret(self.path_times_list[edge],4)
+        print times[0][start:end+1],'\n',times[2][start:end]
+        self.graph_range(times[0][start:end+1],times[2][start:end], 'entropies between {0} and {1}'.format(start,end),show)
+    def graph_edge_entropy(self,edge,show=False):
+        e = edge_interpreter()
+        times = e.interpret(self.path_times_list[edge],3)
+        self.graph_range(times[0],times[2][0:143], 'entropies',show)
+    def graph_each_edge_entropy_at_time(self,time,show=False):
+        entropies=[]
+        e=edge_interpreter()
+        for path in self.path_times_list:
+            entropies.append(e.interpret(path,3)[2][time])
+        print len(entropies)
+        print len(range(len(self.path_times_list)-1))
+        self.graph_range(range(len(self.path_times_list)+1),entropies,'entropies at time {0}'.format(time*10),show,'Edge Index','Entropy')
+    def graph_each_edge_confidence_at_time(self,time,show=False):
+        entropies=[]
+        e=edge_interpreter()
+        for path in self.path_times_list:
+            entropies.append(e.interpret(path,4)[2][time])
+        print len(entropies)
+        print len(range(len(self.path_times_list)-1))
+        self.graph_range(range(len(self.path_times_list)+1),entropies,'confidence intervals at time {0}'.format(time*10),show,'Edge Index','Confidence Interval')
 def main(args):
     t = travel()
+    t.set_up_for_run()
+    t.load_path_times()
    # t.gather_data_forever()
+    #t.naive_run()
     t.gather_data_entropy_clusters()
 
 
