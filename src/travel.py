@@ -1174,7 +1174,7 @@ class travel:
             self.naive_run()
             self.save_path_times()
          self.graph_path_times(True)
-    def gather_data_entropy_clusters(self,days=False):
+    def gather_data_entropy_clusters(self,days=False,type=4):
         print 'days in gather data',days
         self.set_up_for_run()
         self.load_path_times()
@@ -1184,7 +1184,7 @@ class travel:
             else:
                 current_time = 10*int((datetime.today().hour*60+datetime.today().minute)/10)
             print('current time',current_time)
-            tour = self.generate_route_entropy([],current_time,0.25,days)
+            tour = self.generate_route_entropy([],current_time,0.25,days,type)
             print('next time is', current_time+10)
             result = self.follow_exploration_route(tour,0,current_time+10)
             
@@ -1468,12 +1468,39 @@ class travel:
         print len(range(len(self.path_times_list)-1))
         self.graph_range(range(len(self.path_times_list)+1),entropies,'confidence intervals at time {0}'.format(time*10),show,'Edge Index','Confidence Interval')
 def main(args):
-    t = travel()
-    t.set_up_for_run()
-    t.load_path_times()
-   # t.gather_data_forever()
+    #t = travel()
+    #t.set_up_for_run()
+    #t.load_path_times()
+    if len(args)>1:
+        if args[1]==0:
+            t.gather_data_forever()
+        else:
+            if args[1]==1:
+                t.gather_data_entropy_clusters(False,3)
+            else:
+                if args[1]==2:
+                    t.gather_data_entropy_clusters(False,4)
+                else:
+                    if args[1]==3:
+                        t.gather_data_entropy_clusters(True,3)
+                    else:
+                        if args[1]==4:
+                            t.gather_data_entropy_clusters(true,4)
+                        else:
+                            print 'Arguments provided did not match desired input.'
+                            print 'Use 0 for naive search, 1 for entropy ignoring days of the week'
+                            print '2 for confidence intervals ignoring days of the week, 3 for entropy'
+                            print 'using days of the week or 4 for confidence interval using days of the week.'
+    else: 
+        print 'Please provide an argument for mode.'
+        print 'Use 0 for naive search, 1 for entropy ignoring days of the week'
+        print '2 for confidence intervals ignoring days of the week, 3 for entropy'
+        print 'using days of the week or 4 for confidence interval using days of the week.'
+   
+    
+   # 
     #t.naive_run()
-    t.gather_data_entropy_clusters()
+    #
 
 
 if __name__ == '__main__':

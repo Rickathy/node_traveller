@@ -412,150 +412,161 @@ def do_sim(sim_type,tasks,days):
             
         
 def main(args):
-    s = sim(1)
-    print s.t.euler_tour(0,[],[])
-    ''' from_file=True
-    week_long_start=False
-    if from_file== False:
-        task = []
-        if week_long_start==False:
-            actions = [[0,1],[1,2],[1,3],[1,4],[1,5],[1,6],[1,7],[1,1],[1,2],[1,3],[1,4],[1,5],[1,6],[1,7]]
+    if len(args)>2:
+        if args[1]==1:
+            from_file=True
         else:
-            actions = [[0,1],[0,1],[0,1],[0,1],[0,1],[0,1],[0,1],[1,1],[1,2],[1,3],[1,4],[1,5],[1,6],[1,7]]
-        for i in range(1,7):
-            print('first batch',i)
-            task.append([])
-            (clust_averages,clust_sds,expo_averages,expo_sds) = do_sim(i,actions,True)
-            task[i-1].append(clust_averages)
-            (clust_averages,clust_sds,expo_averages,expo_sds) =do_sim(i,actions,False)
-            task[i-1].append(clust_averages)
-        if week_long_start==False:
-                    actions = [[0,1],[2,2],[2,3],[2,4],[2,5],[2,6],[2,7],[2,1],[2,2],[2,3],[2,4],[2,5],[2,6],[2,7]]
+            from_file==False
+        if args[2]==1:
+            week_long_start==True
         else:
-            actions= [[0,1],[0,1],[0,1],[0,1],[0,1],[0,1],[0,1],[2,1],[2,2],[2,3],[2,4],[2,5],[2,6],[2,7]]
-        for i in range(1,7):
-            print('second batch',i)
-            (clust_averages,clust_sds,expo_averages,expo_sds) =do_sim(i,actions,True)
-            task[i-1].append(expo_averages)
-            (clust_averages,clust_sds,expo_averages,expo_sds) =do_sim(i,actions,False)
-            task[i-1].append(expo_averages)
-        if week_long_start==False:
-            actions = [[0,1],[3,2],[3,3],[3,4],[3,5],[3,6],[3,7],[3,1],[3,2],[3,3],[3,4],[3,5],[3,6],[3,7]]
-        else:
-            actions=  [[0,1],[0,1],[0,1],[0,1],[0,1],[0,1],[0,1],[3,1],[3,2],[3,3],[3,4],[3,5],[3,6],[3,7]]
+            week_long_start=False
         
-        for i in range(1,7):
-            print('third batch',i)
-            (clust_averages,clust_sds,expo_averages,expo_sds) =do_sim(i,actions,False)
-            task[i-1].append(clust_averages)
-            task[i-1].append(expo_averages)
-        try:
-            file = open("thesis_experiemnts.ex","wb")
-            pickle.dump( task, file )
-        except EOFError:
-            print 'error, but lets just carry on anyway'
-    else:
-        file =open("thesis_experiemnts.ex","rb")
-        task = pickle.load(file)
-    plt.gca().set_color_cycle(["b", "g", "r", "c", "m", "y", "k"])
-    #plt.legend(('clusters - days', 'clusters', 'exponential - days', 'exponential','random exploration - averages','random exploration - exponential'),loc=2)
-    print task[1]
-    for i in range(6):
-        #print len(task[i])
-        print len([1,2,3,4,5,6,7,8,9,10,11,12,13,14])
-        for j in range(len(task[i])):
-            plt.plot([1,2,3,4,5,6,7,8,9,10,11,12,13,14],task[i][j])
-            plt.title('Environment {0}'.format(i+1))
-            plt.legend(('clusters - days', 'clusters', 'exponential - days', 'exponential','random exploration - averages','random exploration - exponential'),loc=1)
-            plt.xlabel('Day of simulation')
-            plt.ylabel('Average time over optimum (seconds)')
+        if from_file== False:
+            task = []
+            if week_long_start==False:
+                actions = [[0,1],[1,2],[1,3],[1,4],[1,5],[1,6],[1,7],[1,1],[1,2],[1,3],[1,4],[1,5],[1,6],[1,7]]
+            else:
+                actions = [[0,1],[0,1],[0,1],[0,1],[0,1],[0,1],[0,1],[1,1],[1,2],[1,3],[1,4],[1,5],[1,6],[1,7]]
+            for i in range(1,7):
+                print('first batch',i)
+                task.append([])
+                (clust_averages,clust_sds,expo_averages,expo_sds) = do_sim(i,actions,True)
+                task[i-1].append(clust_averages)
+                (clust_averages,clust_sds,expo_averages,expo_sds) =do_sim(i,actions,False)
+                task[i-1].append(clust_averages)
+            if week_long_start==False:
+                        actions = [[0,1],[2,2],[2,3],[2,4],[2,5],[2,6],[2,7],[2,1],[2,2],[2,3],[2,4],[2,5],[2,6],[2,7]]
+            else:
+                actions= [[0,1],[0,1],[0,1],[0,1],[0,1],[0,1],[0,1],[2,1],[2,2],[2,3],[2,4],[2,5],[2,6],[2,7]]
+            for i in range(1,7):
+                print('second batch',i)
+                (clust_averages,clust_sds,expo_averages,expo_sds) =do_sim(i,actions,True)
+                task[i-1].append(expo_averages)
+                (clust_averages,clust_sds,expo_averages,expo_sds) =do_sim(i,actions,False)
+                task[i-1].append(expo_averages)
+            if week_long_start==False:
+                actions = [[0,1],[3,2],[3,3],[3,4],[3,5],[3,6],[3,7],[3,1],[3,2],[3,3],[3,4],[3,5],[3,6],[3,7]]
+            else:
+                actions=  [[0,1],[0,1],[0,1],[0,1],[0,1],[0,1],[0,1],[3,1],[3,2],[3,3],[3,4],[3,5],[3,6],[3,7]]
             
-        #plt.show()
-        #plt.close()
-        plt.figure()
-    #s = sim(3)
-    #days =True
-    #s.naive_day(1)
-    '''
-    #(day_one_clust_av,day_one_clust_sd,day_one_ex_av,day_one_ex_sd) =s.run_tests(days)
-    
-    
-    #for i in range(len(s.t.path_times_list)):
-    #s.intelligent_day(2,3,5,days)
-    #(day_two_clust_av,day_two_clust_sd,day_two_ex_av,day_two_ex_sd) =s.run_tests(days)
-    
-    
-    
-    #s.intelligent_day(3,3,5,days)
-    #(day_three_clust_av,day_three_clust_sd,day_three_ex_av,day_three_ex_sd) =s.run_tests(days)
-    
-    
-    
-    
-    #s.intelligent_day(4,3,5,days)
-    #(day_four_clust_av,day_four_clust_sd,day_four_ex_av,day_four_ex_sd) =s.run_tests(days)
-    #print 'day one'
-    #print 'clustering, average error:{0} , s.d: {1}'.format(day_one_clust_av,day_one_clust_sd)
-    #print 'exponential, average error:{0} , s.d: {1}'.format(day_one_ex_av,day_one_ex_sd)
-    #print 'day two'
-    #print 'clustering, average error:{0} , s.d: {1}'.format(day_two_clust_av,day_two_clust_sd)
-    #print 'exponential, average error:{0} , s.d: {1}'.format(day_two_ex_av,day_two_ex_sd)
-    #print 'day three'
-    #print 'clustering, average error:{0} , s.d: {1}'.format(day_three_clust_av,day_three_clust_sd)
-    #print 'exponential, average error:{0} , s.d: {1}'.format(day_three_ex_av,day_three_ex_sd)
-    #print 'day four'
-    #print 'clustering, average error:{0} , s.d: {1}'.format(day_four_clust_av,day_four_clust_sd)
-    #print 'exponential, average error:{0} , s.d: {1}'.format(day_four_ex_av,day_four_ex_sd)
-    
-  
-   
-   #for pt in s.t.path_times_list:
-     #   print pt            
-    #s.t.graph_edge(0)
-    #e= edge_interpreter()
-    #times = e.interpret(s.t.path_times_list[0],3)
-    #s.t.graph_range(times[0][60:72],times[1][60:71],'edge traversal estimations - clustering')
-    #s.t.graph_range(times[0],times[2][0:143],'entropy')
-    #times = e.interpret(s.t.path_times_list[0],4)
-    #s.t.graph_range(times[0][60:72],times[1][60:71],'edge traversal estimations - exponential')
-    #s.t.graph_range(times[0],times[2][0:143],'confidence interval')
-    #s.t.graph_path_times(True)
-   # print day_one_clust-truth
-    #print day_one_hier-truth
-   # for pt in path_times
-    #for i in range(0,10):
-      #  print random.gauss(0,1)
-   # print 'count',count
-   # route = s.generate_route_at_time(650,type=4)
-   # print 'route is',route
-    #s.follow_route(route ,650)
-    #print s.t.path_times_list
-    #time =630
-    #print 'clustering route'
-    #route= s.t.a_star_route_advanced(time,3,0,7)
-    #for node in route:
-     #   print node
+            for i in range(1,7):
+                print('third batch',i)
+                (clust_averages,clust_sds,expo_averages,expo_sds) =do_sim(i,actions,False)
+                task[i-1].append(clust_averages)
+                task[i-1].append(expo_averages)
+            try:
+                file = open("thesis_experiemnts.ex","wb")
+                pickle.dump( task, file )
+            except EOFError:
+                print 'error, but lets just carry on anyway'
+        else:
+            file =open("thesis_experiemnts.ex","rb")
+            task = pickle.load(file)
+        plt.gca().set_color_cycle(["b", "g", "r", "c", "m", "y", "k"])
+        #plt.legend(('clusters - days', 'clusters', 'exponential - days', 'exponential','random exploration - averages','random exploration - exponential'),loc=2)
+        print task[1]
+        for i in range(6):
+            #print len(task[i])
+            print len([1,2,3,4,5,6,7,8,9,10,11,12,13,14])
+            for j in range(len(task[i])):
+                plt.plot([1,2,3,4,5,6,7,8,9,10,11,12,13,14],task[i][j])
+                plt.title('Environment {0}'.format(i+1))
+                plt.legend(('clusters - days', 'clusters', 'exponential - days', 'exponential','random exploration - averages','random exploration - exponential'),loc=1)
+                plt.xlabel('Day of simulation')
+                plt.ylabel('Average time over optimum (seconds)')
+                
+            #plt.show()
+            #plt.close()
+            plt.figure()
+        #s = sim(3)
+        #days =True
+        #s.naive_day(1)
         
-    #print 'exponential route'
-    #route= s.t.a_star_route_advanced(time,4,0,7)
-    #for node in route:
-   #     print node
-    #e = edge_interpreter()
-    #s.t.graph_edge(0,False)
-    #times = e.interpret(s.t.path_times_list[0],3)
-    #s.t.graph_range(times[0],times[1],'edge traversal estimations - clustering')
-    #s.t.graph_range(times[0],times[2][0:143],'entropy')
-    #times = e.interpret(s.t.path_times_list[0],4)
-    #s.t.graph_range(times[0],times[1],'edge traversal estimations - exponential')
-    #s.t.graph_range(times[0],times[2][0:143],'confidence interval')
-    
-    #matplotlib.pyplot.show()
-    #count=0
-    #for pt in s.t.path_times_list:
-     #   print pt
-        #for rec in pt.recordings:
-      #      count+=1
-    #print 'count',count
-    
+        #(day_one_clust_av,day_one_clust_sd,day_one_ex_av,day_one_ex_sd) =s.run_tests(days)
+        
+        
+        #for i in range(len(s.t.path_times_list)):
+        #s.intelligent_day(2,3,5,days)
+        #(day_two_clust_av,day_two_clust_sd,day_two_ex_av,day_two_ex_sd) =s.run_tests(days)
+        
+        
+        
+        #s.intelligent_day(3,3,5,days)
+        #(day_three_clust_av,day_three_clust_sd,day_three_ex_av,day_three_ex_sd) =s.run_tests(days)
+        
+        
+        
+        
+        #s.intelligent_day(4,3,5,days)
+        #(day_four_clust_av,day_four_clust_sd,day_four_ex_av,day_four_ex_sd) =s.run_tests(days)
+        #print 'day one'
+        #print 'clustering, average error:{0} , s.d: {1}'.format(day_one_clust_av,day_one_clust_sd)
+        #print 'exponential, average error:{0} , s.d: {1}'.format(day_one_ex_av,day_one_ex_sd)
+        #print 'day two'
+        #print 'clustering, average error:{0} , s.d: {1}'.format(day_two_clust_av,day_two_clust_sd)
+        #print 'exponential, average error:{0} , s.d: {1}'.format(day_two_ex_av,day_two_ex_sd)
+        #print 'day three'
+        #print 'clustering, average error:{0} , s.d: {1}'.format(day_three_clust_av,day_three_clust_sd)
+        #print 'exponential, average error:{0} , s.d: {1}'.format(day_three_ex_av,day_three_ex_sd)
+        #print 'day four'
+        #print 'clustering, average error:{0} , s.d: {1}'.format(day_four_clust_av,day_four_clust_sd)
+        #print 'exponential, average error:{0} , s.d: {1}'.format(day_four_ex_av,day_four_ex_sd)
+        
+      
+       
+       #for pt in s.t.path_times_list:
+         #   print pt            
+        #s.t.graph_edge(0)
+        #e= edge_interpreter()
+        #times = e.interpret(s.t.path_times_list[0],3)
+        #s.t.graph_range(times[0][60:72],times[1][60:71],'edge traversal estimations - clustering')
+        #s.t.graph_range(times[0],times[2][0:143],'entropy')
+        #times = e.interpret(s.t.path_times_list[0],4)
+        #s.t.graph_range(times[0][60:72],times[1][60:71],'edge traversal estimations - exponential')
+        #s.t.graph_range(times[0],times[2][0:143],'confidence interval')
+        #s.t.graph_path_times(True)
+       # print day_one_clust-truth
+        #print day_one_hier-truth
+       # for pt in path_times
+        #for i in range(0,10):
+          #  print random.gauss(0,1)
+       # print 'count',count
+       # route = s.generate_route_at_time(650,type=4)
+       # print 'route is',route
+        #s.follow_route(route ,650)
+        #print s.t.path_times_list
+        #time =630
+        #print 'clustering route'
+        #route= s.t.a_star_route_advanced(time,3,0,7)
+        #for node in route:
+         #   print node
+            
+        #print 'exponential route'
+        #route= s.t.a_star_route_advanced(time,4,0,7)
+        #for node in route:
+       #     print node
+        #e = edge_interpreter()
+        #s.t.graph_edge(0,False)
+        #times = e.interpret(s.t.path_times_list[0],3)
+        #s.t.graph_range(times[0],times[1],'edge traversal estimations - clustering')
+        #s.t.graph_range(times[0],times[2][0:143],'entropy')
+        #times = e.interpret(s.t.path_times_list[0],4)
+        #s.t.graph_range(times[0],times[1],'edge traversal estimations - exponential')
+        #s.t.graph_range(times[0],times[2][0:143],'confidence interval')
+        
+        #matplotlib.pyplot.show()
+        #count=0
+        #for pt in s.t.path_times_list:
+         #   print pt
+            #for rec in pt.recordings:
+          #      count+=1
+        #print 'count',count
+    else:
+        print 'Arguments required to run:'
+        print 'First argument: From file or not, used when editing code to  change graphs used. 0 to use old data,1 to generate new data.'
+        print 'Second argument:1for system will do 7 days of naive exploration then 7 using intelligent search.'
+        print '0 will do a single day of intelligent search, then 13 consecutive days of intelligent search.'
+        
 if __name__ == '__main__':
     main(sys.argv)

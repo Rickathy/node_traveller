@@ -22,7 +22,7 @@ def main(args):
     t= travel()
     t.set_up_for_test()
     #t.load_path_times()
-    print t.euler_tour(0,[],[])
+    #print t.euler_tour(0,[],[])
     '''for i in [0,3,len(t.path_times_list)-5]:
     
         print i
